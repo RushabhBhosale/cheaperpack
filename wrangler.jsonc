@@ -33,7 +33,7 @@
     "ADSENSE_PUB_ID": "",
     // Optional ad unit id for the reserved in-content slots. Empty = Auto ads only.
     "ADSENSE_SLOT": "",
-    "GA_ID": "",
+    "GA_ID": "G-J8LMKCM7YX",
     "GSC_VERIFICATION": "vkFi2ZvSlw_b3dfGo7kRPN11HxxcIBYU6XIfXn0N0Js",
     // Random string; enables IndexNow pings (Bing and others). Served at /<key>.txt
     "INDEXNOW_KEY": "b4d6f1a09c7e4d3f8a2b5c6d7e8f9012"
