@@ -1,26 +1,27 @@
 ---
 import Base from '../layouts/Base.astro';
-import { DEVICES } from '../data/devices';
+import { DEVICES, SERIES } from '../data/devices';
+import { breadcrumbLd } from '../lib/seo';
 
-const title = 'Phone cable compatibility finder | CheaperPack';
-const description = 'Check whether a charging cable connector matches an iPhone charging port, using manufacturer specifications.';
+const title = 'iPhone cable compatibility finder: USB-C or Lightning? | CheaperPack';
+const description = 'Pick your iPhone (11 to 17) and a cable type to see if the plug fits. Based on the charging port in Apple’s specifications. Free, no sign-up.';
 const productTypes = [
   { id: 'usb-c-usb-c', name: 'USB-C to USB-C cable', phoneEnd: 'USB-C', explanation: 'A USB-C plug at the phone end.' },
   { id: 'usb-c-lightning', name: 'USB-C to Lightning cable', phoneEnd: 'Lightning', explanation: 'A Lightning plug at the phone end.' },
   { id: 'usb-a-lightning', name: 'USB-A to Lightning cable', phoneEnd: 'Lightning', explanation: 'A Lightning plug at the phone end.' },
 ];
 ---
-<Base title={title} description={description} jsonLd={[{ '@context': 'https://schema.org', '@type': 'WebApplication', name: 'CheaperPack Cable Compatibility Finder', applicationCategory: 'UtilitiesApplication', operatingSystem: 'Any', url: 'https://cheaperpack.com/compatibility/' }]}>
+<Base title={title} description={description} jsonLd={[{ '@context': 'https://schema.org', '@type': 'WebApplication', name: 'CheaperPack Cable Compatibility Finder', applicationCategory: 'UtilitiesApplication', operatingSystem: 'Any', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, url: 'https://cheaperpack.com/compatibility/' }, breadcrumbLd([{ name: 'Home', href: '/' }, { name: 'Cable finder', href: '/compatibility/' }])]}>
   <section class="page ownership-intro compatibility-intro">
     <h1>Will this cable plug in?</h1>
-    <p class="ownership-lede">Choose the exact phone model and the cable connector at the phone end. Results cover the physical plug fit only.</p>
+    <p class="ownership-lede">Choose the exact phone model and the cable connector at the phone end. Results cover the physical plug fit only. Or see <a href="/ports/usb-c/">every iPhone with USB-C</a> and <a href="/ports/lightning/">every iPhone with Lightning</a>.</p>
   </section>
   <section class="page finder-shell" data-ui>
     <form id="compatibility-form" class="finder-form">
       <label for="device-select">Your phone</label>
       <select id="device-select" name="device" required>
         <option value="">Choose a model</option>
-        {DEVICES.map((device) => <option value={device.slug}>{device.name}</option>)}
+        {SERIES.map((s) => <optgroup label={s.name}>{DEVICES.filter((d) => d.series === s.slug).map((device) => <option value={device.slug}>{device.name}</option>)}</optgroup>)}
         <option value="unknown">I’m not sure</option>
       </select>
       <label for="cable-select">Cable type</label>

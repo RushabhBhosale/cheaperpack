@@ -1,16 +1,30 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { GUIDES } from '../../data/guides';
+import Breadcrumbs from '../../components/shared/Breadcrumbs.astro';
+import { GUIDES, GUIDE_TYPES, guidePath } from '../../data/guides';
+import { breadcrumbLd, itemListLd } from '../../lib/seo';
 
-const title = 'Repair, troubleshooting and buying guides | CheaperPack';
-const description = 'Careful, source-linked guides for common phone troubleshooting and buying used devices.';
+const title = 'iPhone repair, troubleshooting and buying guides | CheaperPack';
+const description = 'Careful, source-linked guides for iPhone charging, battery health, storage, overheating, force restarts, buying used and selling or trading in.';
+const crumbs = [{ name: 'Home', href: '/' }, { name: 'Guides', href: '/guides/' }];
+const jsonLd = [
+  breadcrumbLd(crumbs),
+  { '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Tech ownership guides', url: 'https://cheaperpack.com/guides/' },
+  itemListLd('Guides', GUIDES.map((g) => ({ name: g.title, href: guidePath(g.slug) }))),
+];
 ---
-<Base title={title} description={description} jsonLd={[{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Tech ownership guides', url: 'https://cheaperpack.com/guides/' }]}>
+<Base title={title} description={description} jsonLd={jsonLd}>
   <section class="page ownership-intro">
-    <h1>Clear steps for better ownership.</h1>
+    <Breadcrumbs crumbs={crumbs} />
+    <h1 class="mt-6">Clear steps for better ownership.</h1>
     <p class="ownership-lede">Straightforward steps for troubleshooting, repair choices and buying a device second-hand. Each guide points back to its sources.</p>
   </section>
-  <section class="page guide-list" aria-label="Guides">
-    {GUIDES.map((guide) => <a class="guide-row" href={`/guides/${guide.slug}/`}><span><small>{guide.type}</small><strong>{guide.title}</strong><span>{guide.short}</span></span><span class="device-arrow" aria-hidden="true">↗</span></a>)}
-  </section>
+  {GUIDE_TYPES.map(({ type, blurb }) => (
+    <section class="page guide-group" aria-labelledby={`t-${type.length}`}>
+      <header class="series-head"><h2 id={`t-${type.length}`}>{type}</h2><p>{blurb}</p></header>
+      <div class="guide-list">
+        {GUIDES.filter((g) => g.type === type).map((guide) => <a class="guide-row" href={guidePath(guide.slug)}><span><small>Reviewed {guide.updated}</small><strong>{guide.title}</strong><span>{guide.short}</span></span><span class="device-arrow" aria-hidden="true">↗</span></a>)}
+      </div>
+    </section>
+  ))}
 </Base>

@@ -3,7 +3,7 @@
  * breadcrumbs, related-tool links and structured data.
  */
 
-export type ToolCategory = 'Compare' | 'Save' | 'Plan';
+export type ToolCategory = 'Tech' | 'Compare' | 'Save' | 'Plan';
 
 export type ToolIconName =
   | 'scale'
@@ -32,12 +32,24 @@ export interface Tool {
 }
 
 export const CATEGORIES: { name: ToolCategory; blurb: string }[] = [
+  { name: 'Tech', blurb: 'Make your devices last' },
   { name: 'Compare', blurb: 'Find the better buy' },
   { name: 'Save', blurb: 'Know the real cost' },
   { name: 'Plan', blurb: 'Keep spending on track' },
 ];
 
 export const TOOLS: Tool[] = [
+  {
+    slug: 'repair-vs-replace',
+    name: 'Repair vs Replace Calculator',
+    short: 'Compare a repair with a new phone by cost per month of use.',
+    category: 'Tech',
+    icon: 'gauge',
+    title: 'Repair or replace calculator: phone and laptop cost per month | CheaperPack',
+    description:
+      'Should you fix your phone or buy a new one? Enter the repair quote, the replacement price, resale value and how long each should last to compare the real cost per month.',
+    related: ['cost-per-use', 'emi-vs-cash', 'electricity-cost'],
+  },
   {
     slug: 'price-comparison',
     name: 'Smart Price Comparison',

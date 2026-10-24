@@ -1,0 +1,19 @@
+---
+import Field from '../shared/Field.astro';
+import RowHeader from '../shared/RowHeader.astro';
+interface Props {
+  values?: Record<string, string>;
+}
+const v = Astro.props.values ?? {};
+---
+
+<li data-row class="ui-enter rounded-card border border-line bg-white p-4 sm:p-5">
+  <RowHeader placeholder="Option A" value={v.name} />
+  <div class="mt-3 grid grid-cols-2 gap-3">
+    <Field label="Cost" k="price" prefix="currency" value={v.price} placeholder="0" hint="Repair quote or new price" />
+    <Field label="Months of use" k="months" value={v.months} placeholder="e.g. 24" hint="How long you expect to use it" />
+  </div>
+  <div class="mt-3">
+    <Field label="Old phone resale value" k="resale" prefix="currency" value={v.resale} optional hint="Only if you'd sell the old phone when replacing" />
+  </div>
+</li>

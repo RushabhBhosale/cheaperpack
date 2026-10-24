@@ -32,9 +32,9 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
   <rect width="1200" height="630" fill="#ffffff"/>
   ${mark(80, 80, 2.2)}
   <text x="168" y="125" font-family="${font}" font-size="40" font-weight="700" fill="#111827">CheaperPack</text>
-  <text x="80" y="285" font-family="${font}" font-size="80" font-weight="800" fill="#111827" letter-spacing="-1.5">Spend smarter. Save more.</text>
-  <text x="80" y="360" font-family="${font}" font-size="34" fill="#6b7280">Free tools to compare prices and calculate real savings.</text>
-  ${chips(['Price per kg', 'Deals & cashback', 'EMI vs cash', 'Receipts'])}
+  <text x="80" y="285" font-family="${font}" font-size="72" font-weight="800" fill="#111827" letter-spacing="-1.5">Make your tech last longer.</text>
+  <text x="80" y="360" font-family="${font}" font-size="34" fill="#6b7280">Source-linked fixes, device facts and upgrade guides.</text>
+  ${chips(['iPhone guides', 'USB-C vs Lightning', 'Repair or replace', 'Buying used'])}
 </svg>`;
 
 const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 32 32">

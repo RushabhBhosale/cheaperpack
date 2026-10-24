@@ -1,14 +1,35 @@
-# CheaperPack.com
+# CheaperPack: Make Your Tech Last Longer
 
-A free, source-led guide to keeping phones and other technology useful for longer. CheaperPack
-helps people identify device facts, check simple connector fit, troubleshoot common problems and
-inspect used devices. The cable finder uses a small, curated data set and manufacturer references;
-it does not use a paid API or claim compatibility where a fact has not been verified.
+A free, source-led site for keeping phones and other technology useful for longer: device facts,
+repair and troubleshooting guides, cable compatibility, upgrade comparisons and used-device buying
+advice. Every device fact links to the manufacturer's specification page, and nothing relies on a
+paid API.
 
-The existing private money-saving calculators remain available under `/tools/` as supporting
-decision tools. Their calculations and saved inputs still run in the visitor's browser. The site
-has no application server or database. The only third-party script is Google Analytics
-(`G-J8LMKCM7YX`).
+## Site map
+
+| Section | Routes | Source of truth |
+| --- | --- | --- |
+| Device library with search | `/devices/` | `src/data/devices.ts` |
+| Model pages (29 iPhones) | `/devices/<model>/` | `src/data/devices.ts` |
+| Series hubs | `/devices/series/<series>/` | `src/data/devices.ts` |
+| Port lists | `/ports/usb-c/`, `/ports/lightning/` | derived from device data |
+| Compare tool and generation comparisons | `/compare/`, `/compare/<a>-vs-<b>/` | derived from device data |
+| Guides (10) | `/guides/<slug>/` | `src/data/guides.ts` |
+| Cable finder | `/compatibility/` | device data |
+| Tools (11, incl. Repair vs Replace) | `/tools/<slug>/` | `src/data/tools.ts` |
+| About / method | `/about/` | |
+
+Adding a model is one row in `ROWS` in `src/data/devices.ts` (with its Apple spec URL); series pages, port
+lists, comparisons, FAQs, structured data and the sitemap follow automatically. Adding a guide is one
+object in `src/data/guides.ts`. Data tests (`npm test`) check slugs, source links, port-by-year and guide links.
+
+## SEO
+
+Per-page title, description and canonical; `index,follow` with large-preview directives; Open Graph and
+Twitter cards; JSON-LD for Organization, WebSite (with `SearchAction` for `/devices/?q=`), BreadcrumbList,
+FAQPage, Article, HowTo, ProductModel, ItemList and WebApplication; a sitemap with `lastmod`;
+and dense internal linking (related guides, devices, series, comparisons and tools on each page type).
+The CSP in `public/_headers` forbids inline scripts, so `assetsInlineLimit` is `0`.
 
 - **Framework:** [Astro](https://astro.build) 7, every page pre-rendered to static HTML, with Tailwind CSS 4 and plain TypeScript (no UI framework).
 - **Hosting:** Cloudflare Workers static assets, live at https://cheaperpack.com. The same build also works on Cloudflare Pages.
@@ -18,6 +39,7 @@ has no application server or database. The only third-party script is Google Ana
 
 | Tool | Route | What it does |
 | --- | --- | --- |
+| Repair vs Replace | `/tools/repair-vs-replace/` | Cost per month of a repair vs a replacement, net of resale |
 | Smart Price Comparison | `/tools/price-comparison/` | Price per kg / L / piece / oz for 2–8 products. Type “2kg for 210, 1.5kg for 189” or scan a price tag |
 | Bulk Buying Calculator | `/tools/bulk-buying-calculator/` | Regular vs bulk pack: savings, break-even amount, waste before expiry |
 | BOGO Deal Calculator | `/tools/bogo-calculator/` | Buy X get Y (free or discounted), per-order limits, vs a plain discount |

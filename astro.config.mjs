@@ -32,8 +32,18 @@ export default defineConfig({
   build: {
     format: 'directory',
   },
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      // Skip the noindexed 404; give crawlers an accurate last-modified date.
+      filter: (page) => !page.includes('/404'),
+      lastmod: new Date(),
+    }),
+  ],
   vite: {
+    build: {
+      // The CSP (public/_headers) forbids inline scripts, so never inline small bundles.
+      assetsInlineLimit: 0,
+    },
     plugins: [tailwindcss(), dropPaddleOcrBuiltInWorker()],
     resolve: {
       // WebAssembly-only build of ONNX Runtime. The default build also pulls in

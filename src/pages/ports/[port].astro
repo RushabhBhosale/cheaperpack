@@ -1,0 +1,64 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/shared/Breadcrumbs.astro';
+import DeviceCard from '../../components/shared/DeviceCard.astro';
+import Faq from '../../components/shared/Faq.astro';
+import LinkGrid from '../../components/shared/LinkGrid.astro';
+import { SERIES, devicesWithPort, devicePath, type Port } from '../../data/devices';
+import { breadcrumbLd, faqLd, itemListLd } from '../../lib/seo';
+
+export function getStaticPaths() {
+  return [{ params: { port: 'usb-c' }, props: { port: 'USB-C', other: 'lightning' } }, { params: { port: 'lightning' }, props: { port: 'Lightning', other: 'usb-c' } }];
+}
+
+const { port, other } = Astro.props as { port: Port; other: string };
+const key = Astro.params.port;
+const otherPort = port === 'USB-C' ? 'Lightning' : 'USB-C';
+const models = devicesWithPort(port);
+const groups = SERIES.map((s) => ({ series: s, models: models.filter((d) => d.series === s.slug) })).filter((g) => g.models.length);
+const seriesNames = groups.map((g) => g.series.name);
+
+const intro = port === 'USB-C'
+  ? 'Apple introduced USB-C on the iPhone 15 series in 2023. Every iPhone from the 15 series onwards in our library uses it.'
+  : 'Lightning is the charging port on the iPhone 11, 12, 13 and 14 series and on the 2nd and 3rd generation iPhone SE.';
+const cableAdvice = port === 'USB-C'
+  ? 'Buy a cable with a USB-C plug at the phone end, such as USB-C to USB-C. A Lightning cable will not plug into these phones.'
+  : 'Buy a cable with a Lightning plug at the phone end, such as USB-C to Lightning or USB-A to Lightning. A USB-C plug at the phone end will not fit.';
+const faq = [
+  { question: `Which iPhones have ${port}?`, answer: `${seriesNames.join(', ')}. That is ${models.length} models in our library, each checked against Apple’s technical specifications.` },
+  { question: `What cable do I need for an iPhone with ${port}?`, answer: cableAdvice },
+  { question: `Can I use ${otherPort} cables with these iPhones?`, answer: `Not directly. The plug at the phone end has to match the port. A ${otherPort} plug will not fit a ${port} iPhone.` },
+];
+const title = `iPhones with ${port}: full list of ${models.length} models | CheaperPack`;
+const description = `Every iPhone with a ${port} charging port, ${models.length} models in total, grouped by series. Includes the right cable type and Apple source links.`;
+const crumbs = [{ name: 'Home', href: '/' }, { name: 'Devices', href: '/devices/' }, { name: `iPhones with ${port}`, href: `/ports/${key}/` }];
+const jsonLd = [breadcrumbLd(crumbs), itemListLd(`iPhones with ${port}`, models.map((d) => ({ name: d.name, href: devicePath(d.slug) }))), faqLd(faq)];
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <section class="page ownership-intro">
+    <Breadcrumbs crumbs={crumbs} />
+    <h1 class="mt-6">iPhones with {port}</h1>
+    <p class="ownership-lede">{intro}</p>
+  </section>
+
+  <div class="page">
+    {groups.map((g) => (
+      <section class="series-block" aria-labelledby={`g-${g.series.slug}`}>
+        <header class="series-head"><h2 id={`g-${g.series.slug}`}><a href={`/devices/series/${g.series.slug}/`}>{g.series.name}</a></h2></header>
+        <div class="card-grid">{g.models.map((device) => <DeviceCard device={device} />)}</div>
+      </section>
+    ))}
+
+    <section class="device-copy">
+      <h2>Which cable do I need?</h2>
+      <p>{cableAdvice} This only covers the plug. Charging speed, data features and cable quality depend on the cable and the adapter. See the <a href="/guides/lightning-vs-usb-c-iphone/">Lightning vs USB-C guide</a> or use the <a href="/compatibility/">cable compatibility finder</a>.</p>
+    </section>
+
+    <div class="max-w-[44rem]"><Faq items={faq} heading={`iPhones with ${port}: questions`} /></div>
+    <LinkGrid heading="Keep going" links={[
+      { label: `iPhones with ${otherPort}`, href: `/ports/${other}/`, hint: 'The other connector' },
+      { label: 'All iPhone models', href: '/devices/', hint: 'Search by model, chip or port' },
+      { label: 'Compare two iPhones', href: '/compare/', hint: 'Side-by-side specs' },
+    ]} id="keep-going" />
+  </div>
+</Base>

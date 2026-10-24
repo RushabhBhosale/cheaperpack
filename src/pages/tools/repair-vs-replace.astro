@@ -1,0 +1,70 @@
+---
+import ToolLayout from '../../components/layout/ToolLayout.astro';
+import ResultPanel from '../../components/shared/ResultPanel.astro';
+import ExampleNote from '../../components/shared/ExampleNote.astro';
+import RepairRow from '../../components/tools/RepairRow.astro';
+import { compareCostPerUse } from '../../lib/calculations/cost-per-use';
+
+const faq = [
+  {
+    question: 'How does the repair vs replace calculator work?',
+    answer:
+      'For each option it takes the cost, subtracts any resale value of the old phone, and divides by the months you expect to use it. The option with the lowest cost per month is the better value on those numbers.',
+  },
+  {
+    question: 'Where do I put the resale value?',
+    answer: 'On the replacement option. If you would sell the old phone to help pay for the new one, enter that amount as the old phone’s resale value there. Leave it empty on a repair.',
+  },
+  {
+    question: 'How many months should I enter?',
+    answer: 'The months you honestly expect to keep using the phone after the repair or purchase. Be conservative: this estimate moves the result more than any other number.',
+  },
+  {
+    question: 'Does it work for laptops and tablets?',
+    answer: 'Yes. It is a cost-per-month comparison, so it works for any device where you are choosing between fixing and replacing.',
+  },
+];
+const ex = compareCostPerUse([
+  { price: 4500, uses: 24, maintenance: 0, resale: 0 },
+  { price: 60000, uses: 48, maintenance: 0, resale: 15000 },
+]);
+---
+
+<ToolLayout slug="repair-vs-replace" intro="Put a repair quote and a replacement on the same scale: what each costs per month of use." faq={faq}>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-10">
+    <div data-tool>
+      <ExampleNote />
+      <ol class="grid gap-3" data-rows aria-label="Options to compare">
+        <RepairRow values={{ name: 'Repair', price: '4500', months: '24' }} />
+        <RepairRow values={{ name: 'Replace', price: '60000', months: '48', resale: '15000' }} />
+      </ol>
+      <template data-row-template><RepairRow /></template>
+      <button type="button" class="btn btn-link mt-3" data-add>+ Add option</button>
+    </div>
+    <ResultPanel empty="Enter a cost and the months of use for two options." />
+  </div>
+
+  <Fragment slot="content">
+    <h2>Why compare by the month</h2>
+    <p>
+      A cheap repair that buys you six months can cost more per month than a pricier phone that lasts four years. Dividing by the
+      months you expect to use the device makes the two choices comparable, whatever their price tags.
+    </p>
+    <h2>Example</h2>
+    <p>
+      A ₹4,500 repair that gives 24 more months costs about ₹{Math.round(ex.results[0]!.perUse)} a month. A ₹60,000 replacement used for 48
+      months, after selling the old phone for ₹15,000, costs about ₹{Math.round(ex.results[1]!.perUse)} a month. On those numbers the repair
+      wins, but only if the phone really lasts the extra two years.
+    </p>
+    <h2>Before you decide</h2>
+    <p>
+      Read our guides on <a href="/guides/iphone-battery-health/">iPhone battery health</a> and
+      <a href="/guides/repair-or-replace-your-phone/">repair or replace</a>, and check whether a new model changes the
+      <a href="/ports/usb-c/">charging connector</a>, which can mean new cables.
+    </p>
+  </Fragment>
+</ToolLayout>
+
+<script>
+  import '../../scripts/tools/repair-vs-replace';
+</script>

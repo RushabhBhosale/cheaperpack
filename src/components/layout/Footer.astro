@@ -1,16 +1,22 @@
 ---
 import { TOOLS, toolPath } from '../../data/tools';
+import { SERIES } from '../../data/devices';
+import { GUIDES, guidePath } from '../../data/guides';
+
+const guides = ['iphone-wont-charge', 'iphone-battery-health', 'buying-a-used-iphone', 'sell-or-trade-in-your-iphone', 'repair-or-replace-your-phone']
+  .map((slug) => GUIDES.find((g) => g.slug === slug)!);
 ---
 
 <footer class="site-footer">
   <div class="page site-footer-inner">
-    <div class="footer-brand"><a href="/" class="site-wordmark"><span>CheaperPack</span></a><p>Clearer decisions for the tech you own.</p></div>
-    <div class="footer-links"><h2>Ownership</h2><a href="/devices/">Device library</a><a href="/compatibility/">Cable finder</a><a href="/guides/">Repair & buying guides</a></div>
-    <div class="footer-links"><h2>Calculators</h2><a href="/tools/">All tools</a>{TOOLS.slice(0, 3).map((tool) => <a href={toolPath(tool.slug)}>{tool.name}</a>)}</div>
-    <div class="footer-links"><h2>About</h2><a href="/how-it-works/">How unit prices work</a><a href="/faq/">FAQ</a><a href="/privacy/">Privacy</a></div>
+    <div class="footer-brand"><a href="/" class="site-wordmark"><span>CheaperPack</span></a><p>Make your tech last longer.</p></div>
+    <div class="footer-links"><h2>iPhones</h2><a href="/devices/">All models</a><a href="/ports/usb-c/">iPhones with USB-C</a><a href="/ports/lightning/">iPhones with Lightning</a><a href="/compare/">Compare models</a>{SERIES.slice(0, 4).map((s) => <a href={`/devices/series/${s.slug}/`}>{s.name}</a>)}</div>
+    <div class="footer-links"><h2>Guides</h2><a href="/guides/">All guides</a>{guides.map((g) => <a href={guidePath(g.slug)}>{g.title}</a>)}</div>
+    <div class="footer-links"><h2>Tools</h2><a href="/tools/">All tools</a><a href="/compatibility/">Cable finder</a>{TOOLS.slice(0, 4).map((tool) => <a href={toolPath(tool.slug)}>{tool.name}</a>)}</div>
+    <div class="footer-links"><h2>About</h2><a href="/about/">How we check facts</a><a href="/how-it-works/">How unit prices work</a><a href="/faq/">FAQ</a><a href="/privacy/">Privacy</a></div>
   </div>
   <div class="page footer-close">
-    <p>Device facts link to their sources. Compatibility results show what they do—and do not—confirm.</p>
+    <p>Device facts link to their sources. Compatibility results show what they do, and do not, confirm.</p>
     <p>© {new Date().getFullYear()} CheaperPack</p>
   </div>
 </footer>
