@@ -38,10 +38,8 @@ async function sitemap(env: Env): Promise<Response> {
   const out: string[] = [];
   for (const p of sitemapStaticPaths) out.push(url(p, p === '/' || p === '/recalls/' ? (latest[0]?.date ?? today) : undefined));
   for (const c of cats) out.push(url(`/category/${c.key}/`, c.latest));
-  for (const h of HAZARDS) {
-    const n = await countCards(env.DB, { where: 'hazards LIKE ? AND eligible = 1', params: [`%|${h.slug}|%`] });
-    if (n >= MIN_HUB) out.push(url(`/hazard/${h.slug}/`, latest[0]?.date ?? today));
-  }
+  const hazardN = await Promise.all(HAZARDS.map((h) => countCards(env.DB, { where: 'hazards LIKE ? AND eligible = 1', params: [`%|${h.slug}|%`] })));
+  HAZARDS.forEach((h, i) => { if ((hazardN[i] ?? 0) >= MIN_HUB) out.push(url(`/hazard/${h.slug}/`, latest[0]?.date ?? today)); });
   for (const b of brands) if (b.name) out.push(url(`/brand/${b.key}/`, b.latest));
   for (const r of rows) out.push(url(`/recall/${r.slug}/`, r.last_publish));
   return xml(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${out.join('')}</urlset>`, 'application/xml');
@@ -78,6 +76,13 @@ const parsePage = (s: string | undefined): number | null => {
 async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
+
+  // One canonical host: send www (and any other host) to the configured site address.
+  const canonicalHost = new URL(env.SITE_URL).host;
+  if (url.host !== canonicalHost && !url.hostname.endsWith('.workers.dev') && url.hostname !== 'localhost') return redirect(`${env.SITE_URL}${path}${url.search}`);
+
+  // Pages from the site this one replaced are gone for good.
+  if (/^\/(tools|devices|compatibility|faq|how-it-works|ports|compare)(\/|$)/.test(path)) return new Response('Gone', { status: 410, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } });
 
   // Canonical form: lowercase-free paths end with a slash (files with an extension are exempt).
   if (!path.endsWith('/') && !/\.[a-z0-9]+$/i.test(path)) return redirect(`${path}/${url.search}`);

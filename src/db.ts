@@ -116,12 +116,8 @@ export async function groupBy(db: D1Database, column: 'category' | 'brand_slug',
 }
 
 export async function hazardCounts(db: D1Database, slugs: string[]): Promise<Record<string, number>> {
-  const out: Record<string, number> = {};
-  for (const s of slugs) {
-    const row = await db.prepare('SELECT COUNT(*) AS n FROM recalls WHERE hazards LIKE ?').bind(`%|${s}|%`).first<{ n: number }>();
-    out[s] = row?.n ?? 0;
-  }
-  return out;
+  const rows = await Promise.all(slugs.map((s) => db.prepare('SELECT COUNT(*) AS n FROM recalls WHERE hazards LIKE ?').bind(`%|${s}|%`).first<{ n: number }>()));
+  return Object.fromEntries(slugs.map((s, i) => [s, rows[i]?.n ?? 0]));
 }
 
 export async function brandName(db: D1Database, slug: string): Promise<string | null> {

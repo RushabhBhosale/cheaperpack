@@ -153,12 +153,8 @@ export async function recallsIndex(env: Env, page: number): Promise<Page> {
 }
 
 async function hubHazardStats(env: Env, f: ReturnType<typeof filters.category>): Promise<{ slug: string; n: number }[]> {
-  const out: { slug: string; n: number }[] = [];
-  for (const h of HAZARDS) {
-    const n = await countCards(env.DB, { where: `${f.where} AND hazards LIKE ?`, params: [...f.params, `%|${h.slug}|%`] });
-    if (n) out.push({ slug: h.slug, n });
-  }
-  return out.sort((a, b) => b.n - a.n);
+  const counts = await Promise.all(HAZARDS.map((h) => countCards(env.DB, { where: `${f.where} AND hazards LIKE ?`, params: [...f.params, `%|${h.slug}|%`] })));
+  return HAZARDS.map((h, i) => ({ slug: h.slug, n: counts[i] ?? 0 })).filter((h) => h.n > 0).sort((a, b) => b.n - a.n);
 }
 
 export async function categoryPage(env: Env, slug: string, page: number): Promise<Page | null> {
@@ -197,11 +193,8 @@ export async function hazardPage(env: Env, slug: string, page: number): Promise<
   if (!total || (page > 1 && !cards.length)) return null;
   const base = `/hazard/${slug}/`;
   const groups = await groupBy(env.DB, 'category');
-  const perCat: { slug: string; n: number }[] = [];
-  for (const g of groups) {
-    const n = await countCards(env.DB, { where: 'category = ? AND hazards LIKE ?', params: [g.key, `%|${slug}|%`] });
-    if (n) perCat.push({ slug: g.key, n });
-  }
+  const perCatCounts = await Promise.all(groups.map((g) => countCards(env.DB, { where: 'category = ? AND hazards LIKE ?', params: [g.key, `%|${slug}|%`] })));
+  const perCat: { slug: string; n: number }[] = groups.map((g, i) => ({ slug: g.key, n: perCatCounts[i] ?? 0 })).filter((c) => c.n > 0);
   perCat.sort((a, b) => b.n - a.n);
   const crumbs: Crumb[] = [{ name: 'Home', path: '/' }, { name: 'Browse', path: '/browse/' }, { name: info.name, path: pagePath(base, page) }];
   const faq = [
