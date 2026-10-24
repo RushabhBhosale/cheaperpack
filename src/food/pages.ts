@@ -3,7 +3,7 @@ import { adSlot } from '../layout.ts';
 import { PAGE_SIZE, crumbsHtml, faqBlock, pagePath, pagination, sentence, type Page } from '../pages.ts';
 import { breadcrumbLd, faqLd, foodIndexBudget, itemListLd, type Crumb } from '../seo.ts';
 import type { Env } from '../types.ts';
-import { countFood, firmName, foodFilters, foodGroups, foodHazardCounts, getFoodEvent, listFood, relatedFood, searchFood, type FoodCard } from './db.ts';
+import { countFood, firmName, foodFilters, foodGroups, foodHazardCounts, getFoodEvent, listFood, relatedFood, searchFood, totalFood, type FoodCard } from './db.ts';
 import { CLASS_INFO, FIRST_FOOD_YEAR, FOOD_CATEGORIES, FOOD_HAZARDS, OTHER_FOOD, foodCategoryInfo, foodHazardInfo } from './derive.ts';
 
 const FDA_ENFORCEMENT = 'https://www.accessdata.fda.gov/scripts/ires/index.cfm';
@@ -147,7 +147,7 @@ export async function foodLatest(env: Env, page: number): Promise<Page | null> {
 
 export async function foodHome(env: Env): Promise<Page> {
   const [latest, total, hazardCounts, firms, cats] = await Promise.all([
-    listFood(env.DB, foodFilters.all(), 12, 0), countFood(env.DB, foodFilters.all()), foodHazardCounts(env.DB, FOOD_HAZARDS.map((h) => h.slug)),
+    listFood(env.DB, foodFilters.all(), 12, 0), totalFood(env.DB), foodHazardCounts(env.DB, FOOD_HAZARDS.map((h) => h.slug)),
     foodGroups(env.DB, 'firm_slug', MIN_FIRM), foodGroups(env.DB, 'category'),
   ]);
   const crumbs: Crumb[] = [{ name: 'Home', path: '/' }, { name: 'Food recalls', path: '/food/' }];

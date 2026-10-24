@@ -80,6 +80,9 @@ export function toVehicle(make: string, model: string, year: string | number): C
   return { make: CONSUMER_MAKES[m]!, model: modelName, year: y, makeSlug: slugify(CONSUMER_MAKES[m]!), modelSlug: slugify(modelName) };
 }
 
+/** A vehicle page is indexable with 2+ recalls, or one long recall. Mirrors PAGE_ELIGIBLE_SQL in db.ts. */
+export const pageEligible = (year: number, n: number, chars: number): boolean => year >= FIRST_PAGE_MODEL_YEAR && (n >= 2 || chars >= 700);
+
 export const campaignYear = (campaign: string): number => 2000 + Number(campaign.slice(0, 2));
 
 /** A campaign is worth a page only if NHTSA gave us real text to show. */

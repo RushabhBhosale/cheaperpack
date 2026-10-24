@@ -1,5 +1,5 @@
 import { makesList } from './cars/db.ts';
-import { brandName, categoryStats, countCards, filters, groupBy, hazardCounts, listCards, relatedCards, searchCards, type RecallCard } from './db.ts';
+import { brandName, categoryStats, countCards, filters, groupBy, hazardByCategory, hazardCounts, listCards, relatedCards, searchCards, totalRecalls, type RecallCard } from './db.ts';
 import { CATEGORIES, HAZARDS, OTHER_CATEGORY, displayNumber } from './derive.ts';
 import { esc, fmtDate, html, plural, raw, truncate, type Html } from './html.ts';
 import { adSlot, type PageMeta } from './layout.ts';
@@ -138,7 +138,7 @@ ${related.category.length ? html`<section aria-labelledby="similar"><h2 id="simi
 // ---------- lists ----------
 
 export async function recallsIndex(env: Env, page: number): Promise<Page> {
-  const total = await countCards(env.DB, filters.all());
+  const total = await totalRecalls(env.DB);
   const cards = await listCards(env.DB, filters.all(), PAGE_SIZE, (page - 1) * PAGE_SIZE);
   const crumbs: Crumb[] = [{ name: 'Home', path: '/' }, { name: 'Latest recalls', path: pagePath('/recalls/', page) }];
   return {
@@ -193,9 +193,7 @@ export async function hazardPage(env: Env, slug: string, page: number): Promise<
   const [total, cards, eligibleCount] = await Promise.all([countCards(env.DB, f), listCards(env.DB, f, PAGE_SIZE, (page - 1) * PAGE_SIZE), countCards(env.DB, { where: 'hazards LIKE ? AND eligible = 1', params: [`%|${slug}|%`] })]);
   if (!total || (page > 1 && !cards.length)) return null;
   const base = `/hazard/${slug}/`;
-  const groups = await groupBy(env.DB, 'category');
-  const perCatCounts = await Promise.all(groups.map((g) => countCards(env.DB, { where: 'category = ? AND hazards LIKE ?', params: [g.key, `%|${slug}|%`] })));
-  const perCat: { slug: string; n: number }[] = groups.map((g, i) => ({ slug: g.key, n: perCatCounts[i] ?? 0 })).filter((c) => c.n > 0);
+  const perCat: { slug: string; n: number }[] = (await hazardByCategory(env.DB, slug)).map((c) => ({ slug: c.category, n: c.n }));
   perCat.sort((a, b) => b.n - a.n);
   const crumbs: Crumb[] = [{ name: 'Home', path: '/' }, { name: 'Browse', path: '/browse/' }, { name: info.name, path: pagePath(base, page) }];
   const faq = [
@@ -294,7 +292,7 @@ export async function homePage(env: Env): Promise<Page> {
   const [latest, groups, total, brands, carMakes] = await Promise.all([
     listCards(env.DB, filters.all(), 12, 0),
     groupBy(env.DB, 'category'),
-    countCards(env.DB, filters.all()),
+    totalRecalls(env.DB),
     groupBy(env.DB, 'brand_slug', MIN_BRAND_RECALLS),
     makesList(env.DB),
   ]);

@@ -1,4 +1,5 @@
 import { truncate } from '../html.ts';
+import { HOURS, memo } from '../memo.ts';
 import { getMeta, setMetaStatement } from '../db.ts';
 import { foodHazardInfo, type FoodEvent } from './derive.ts';
 
@@ -86,17 +87,24 @@ export async function searchFood(db: D1Database, q: string, limit = 40): Promise
 export interface FoodGroup { key: string; name: string; n: number; eligible: number; latest: string }
 
 export async function foodGroups(db: D1Database, column: 'category' | 'firm_slug', minEligible = 0): Promise<FoodGroup[]> {
-  const { results } = await db
-    .prepare(`SELECT ${column} AS key, MAX(firm) AS name, COUNT(*) AS n, SUM(eligible) AS eligible, MAX(report_date) AS latest FROM food_recalls WHERE ${column} != '' GROUP BY ${column} HAVING SUM(eligible) >= ? ORDER BY n DESC`)
-    .bind(minEligible)
-    .all<FoodGroup>();
-  return results;
+  return memo(db, `food:groups:${column}:${minEligible}`, 6 * HOURS, async () => {
+    const { results } = await db
+      .prepare(`SELECT ${column} AS key, MAX(firm) AS name, COUNT(*) AS n, SUM(eligible) AS eligible, MAX(report_date) AS latest FROM food_recalls WHERE ${column} != '' GROUP BY ${column} HAVING SUM(eligible) >= ? ORDER BY n DESC`)
+      .bind(minEligible)
+      .all<FoodGroup>();
+    return results;
+  });
 }
 
 export async function foodHazardCounts(db: D1Database, slugs: string[], eligibleOnly = false): Promise<Record<string, number>> {
-  const rows = await Promise.all(slugs.map((s) => db.prepare(`SELECT COUNT(*) AS n FROM food_recalls WHERE hazards LIKE ?${eligibleOnly ? ' AND eligible = 1' : ''}`).bind(`%|${s}|%`).first<{ n: number }>()));
-  return Object.fromEntries(slugs.map((s, i) => [s, rows[i]?.n ?? 0]));
+  return memo(db, `food:hazardCounts:${eligibleOnly}`, 6 * HOURS, async () => {
+    const cols = slugs.map((_, i) => `COALESCE(SUM(hazards LIKE ?${i + 1}), 0) AS c${i}`).join(', ');
+    const row = await db.prepare(`SELECT ${cols} FROM food_recalls${eligibleOnly ? ' WHERE eligible = 1' : ''}`).bind(...slugs.map((s) => `%|${s}|%`)).first<Record<string, number>>();
+    return Object.fromEntries(slugs.map((s, i) => [s, Number(row?.[`c${i}`] ?? 0)]));
+  });
 }
+
+export const totalFood = (db: D1Database) => memo(db, 'food:total', 3 * HOURS, () => countFood(db, foodFilters.all()));
 
 export async function firmName(db: D1Database, slug: string): Promise<string | null> {
   const row = await db.prepare('SELECT firm FROM food_recalls WHERE firm_slug = ? ORDER BY report_date DESC LIMIT 1').bind(slug).first<{ firm: string }>();

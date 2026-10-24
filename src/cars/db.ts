@@ -1,3 +1,4 @@
+import { HOURS, memo } from '../memo.ts';
 import { FIRST_PAGE_MODEL_YEAR, campaignTitle, type CarCampaign } from './derive.ts';
 
 export interface CarRecallRow {
@@ -114,16 +115,20 @@ export async function recallsForMake(db: D1Database, makeSlug: string, limit: nu
 }
 
 export async function latestCarRecalls(db: D1Database, limit: number, offset = 0): Promise<{ rows: CarRecallRow[]; total: number }> {
-  const [{ results }, count] = await Promise.all([
+  const [{ results }, total] = await Promise.all([
     db.prepare(`SELECT ${RECALL_COLS} FROM car_recalls r ORDER BY r.date DESC, r.campaign DESC LIMIT ? OFFSET ?`).bind(limit, offset).all<CarRecallRow>(),
-    db.prepare('SELECT COUNT(*) AS n FROM car_recalls').first<{ n: number }>(),
+    memo(db, 'cars:total', 3 * HOURS, async () => (await db.prepare('SELECT COUNT(*) AS n FROM car_recalls').first<{ n: number }>())?.n ?? 0),
   ]);
-  return { rows: results, total: count?.n ?? 0 };
+  return { rows: results, total };
 }
 
 export interface MakeRow { make_slug: string; make: string; models: number; pages: number; recalls: number; latest: string }
 
 export async function makesList(db: D1Database): Promise<MakeRow[]> {
+  return memo(db, 'cars:makesList', 6 * HOURS, () => makesListQuery(db));
+}
+
+async function makesListQuery(db: D1Database): Promise<MakeRow[]> {
   const { results } = await db
     .prepare(`SELECT p.make_slug AS make_slug, MIN(p.make) AS make, COUNT(DISTINCT p.model_slug) AS models, COUNT(*) AS pages,
               (SELECT COUNT(DISTINCT campaign) FROM car_vehicles WHERE make_slug = p.make_slug) AS recalls, MAX(p.latest) AS latest
@@ -135,6 +140,10 @@ export async function makesList(db: D1Database): Promise<MakeRow[]> {
 export interface ModelRow { model_slug: string; model: string; years: number; recalls: number; latest: string; first_year: number; last_year: number }
 
 export async function modelsForMake(db: D1Database, makeSlug: string): Promise<ModelRow[]> {
+  return memo(db, `cars:models:${makeSlug}`, 6 * HOURS, () => modelsForMakeQuery(db, makeSlug));
+}
+
+async function modelsForMakeQuery(db: D1Database, makeSlug: string): Promise<ModelRow[]> {
   const { results } = await db
     .prepare(`SELECT p.model_slug AS model_slug, MIN(p.model) AS model, COUNT(*) AS years, MAX(p.latest) AS latest, MIN(p.year) AS first_year, MAX(p.year) AS last_year,
               (SELECT COUNT(DISTINCT campaign) FROM car_vehicles WHERE make_slug = p.make_slug AND model_slug = p.model_slug) AS recalls

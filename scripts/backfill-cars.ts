@@ -11,10 +11,11 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { campaignTitle, campaignYear, isUsable, isoDate, prettyManufacturer, toVehicle, type CarCampaign } from '../src/cars/derive.ts';
-import { PAGE_ELIGIBLE_SQL } from '../src/cars/db.ts';
+import { campaignTitle, campaignYear, isUsable, isoDate, pageEligible, prettyManufacturer, toVehicle, type CarCampaign } from '../src/cars/derive.ts';
 
 const target = process.argv.includes('--remote') ? '--remote' : '--local';
+// Re-run only the page aggregation (used to resume after an interrupted import).
+const pagesOnly = process.argv.includes('--pages-only');
 const DB_NAME = 'recalls';
 const URL_ZIP = 'https://static.nhtsa.gov/odi/ffdd/rcl/FLAT_RCL_POST_2010.zip';
 
@@ -61,10 +62,10 @@ const runSql = (name: string, sql: string) => {
   wrangler([`--file=${file}`]);
 };
 
-runSql('clear.sql', 'DELETE FROM car_vehicles; DELETE FROM car_recalls; DELETE FROM car_pages;');
+if (!pagesOnly) runSql('clear.sql', 'DELETE FROM car_vehicles; DELETE FROM car_recalls; DELETE FROM car_pages;');
 
 const CHUNK = 250;
-for (let i = 0; i < usable.length; i += CHUNK) {
+for (let i = 0; !pagesOnly && i < usable.length; i += CHUNK) {
   const slice = usable.slice(i, i + CHUNK);
   const sql: string[] = [];
   slice.forEach((c, j) => {
@@ -79,13 +80,31 @@ for (let i = 0; i < usable.length; i += CHUNK) {
   process.stdout.write(`.${Math.min(i + CHUNK, usable.length)} `);
 }
 
-runSql(
-  'pages.sql',
-  `INSERT INTO car_pages (make_slug, model_slug, year, make, model, n, chars, latest, eligible, idx_rank)
-   SELECT v.make_slug, v.model_slug, v.year, MIN(v.make), MIN(v.model), COUNT(*), SUM(length(r.summary) + length(r.consequence) + length(r.remedy)), MAX(r.date), ${PAGE_ELIGIBLE_SQL}, NULL
-   FROM car_vehicles v JOIN car_recalls r ON r.campaign = v.campaign GROUP BY v.make_slug, v.model_slug, v.year;
-   WITH ranked AS (SELECT make_slug, model_slug, year, ROW_NUMBER() OVER (ORDER BY n DESC, year DESC, make_slug, model_slug) AS rn FROM car_pages WHERE eligible = 1)
-   UPDATE car_pages SET idx_rank = (SELECT rn FROM ranked WHERE ranked.make_slug = car_pages.make_slug AND ranked.model_slug = car_pages.model_slug AND ranked.year = car_pages.year) WHERE eligible = 1;`,
-);
+// Page aggregates are computed here, not in SQL: the same query exceeds D1's CPU limit on 30,000 rows.
+interface PageAgg { makeSlug: string; modelSlug: string; year: number; make: string; model: string; n: number; chars: number; latest: string }
+const pages = new Map<string, PageAgg>();
+for (const c of usable) {
+  const chars = c.summary.length + c.consequence.length + c.remedy.length;
+  for (const v of c.vehicles) {
+    const key = `${v.makeSlug}|${v.modelSlug}|${v.year}`;
+    const p = pages.get(key) ?? { makeSlug: v.makeSlug, modelSlug: v.modelSlug, year: v.year, make: v.make, model: v.model, n: 0, chars: 0, latest: '' };
+    p.n += 1;
+    p.chars += chars;
+    if (c.date > p.latest) p.latest = c.date;
+    pages.set(key, p);
+  }
+}
+const pageList = [...pages.values()];
+const eligible = pageList.filter((p) => pageEligible(p.year, p.n, p.chars)).sort((a, b) => b.n - a.n || b.year - a.year || a.makeSlug.localeCompare(b.makeSlug) || a.modelSlug.localeCompare(b.modelSlug));
+const rank = new Map(eligible.map((p, i) => [`${p.makeSlug}|${p.modelSlug}|${p.year}`, i + 1]));
+runSql('pages-clear.sql', 'DELETE FROM car_pages;');
+for (let i = 0; i < pageList.length; i += 400) {
+  const rows = pageList.slice(i, i + 400).map((p) => {
+    const ok = pageEligible(p.year, p.n, p.chars);
+    return `(${[p.makeSlug, p.modelSlug, p.year, p.make, p.model, p.n, p.chars, p.latest, ok ? 1 : 0, ok ? (rank.get(`${p.makeSlug}|${p.modelSlug}|${p.year}`) ?? null) : null].map(q).join(', ')})`;
+  });
+  runSql(`pages-${i}.sql`, `INSERT INTO car_pages (make_slug, model_slug, year, make, model, n, chars, latest, eligible, idx_rank) VALUES ${rows.join(', ')};`);
+  process.stdout.write(`p${Math.min(i + 400, pageList.length)} `);
+}
 rmSync(dir, { recursive: true, force: true });
-console.log(`\nDone. Loaded ${usable.length} vehicle recall campaigns into ${target.slice(2)} D1.`);
+console.log(`\nDone. Loaded ${usable.length} vehicle recall campaigns and ${pageList.length} vehicle pages (${eligible.length} indexable) into ${target.slice(2)} D1.`);

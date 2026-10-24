@@ -1,3 +1,4 @@
+import { HOURS, memo } from './memo.ts';
 import type { Recall } from './types.ts';
 
 /** Light row used for lists (no full JSON payload). */
@@ -108,17 +109,33 @@ export async function searchCards(db: D1Database, q: string, limit = 40): Promis
 export interface Group { key: string; name: string; n: number; eligible: number; latest: string }
 
 export async function groupBy(db: D1Database, column: 'category' | 'brand_slug', minEligible = 0): Promise<Group[]> {
-  const { results } = await db
-    .prepare(`SELECT ${column} AS key, MAX(brand) AS name, COUNT(*) AS n, SUM(eligible) AS eligible, MAX(date) AS latest FROM recalls WHERE ${column} != '' GROUP BY ${column} HAVING SUM(eligible) >= ? ORDER BY n DESC`)
-    .bind(minEligible)
-    .all<Group>();
-  return results;
+  return memo(db, `groupBy:${column}:${minEligible}`, 6 * HOURS, async () => {
+    const { results } = await db
+      .prepare(`SELECT ${column} AS key, MAX(brand) AS name, COUNT(*) AS n, SUM(eligible) AS eligible, MAX(date) AS latest FROM recalls WHERE ${column} != '' GROUP BY ${column} HAVING SUM(eligible) >= ? ORDER BY n DESC`)
+      .bind(minEligible)
+      .all<Group>();
+    return results;
+  });
 }
 
-export async function hazardCounts(db: D1Database, slugs: string[]): Promise<Record<string, number>> {
-  const rows = await Promise.all(slugs.map((s) => db.prepare('SELECT COUNT(*) AS n FROM recalls WHERE hazards LIKE ?').bind(`%|${s}|%`).first<{ n: number }>()));
-  return Object.fromEntries(slugs.map((s, i) => [s, rows[i]?.n ?? 0]));
+/** Recall counts per hazard in one table scan (cached). */
+export async function hazardCounts(db: D1Database, slugs: string[], eligibleOnly = false): Promise<Record<string, number>> {
+  return memo(db, `hazardCounts:${eligibleOnly}:${slugs.join(',')}`, 6 * HOURS, async () => {
+    const cols = slugs.map((_, i) => `COALESCE(SUM(hazards LIKE ?${i + 1}), 0) AS c${i}`).join(', ');
+    const row = await db.prepare(`SELECT ${cols} FROM recalls${eligibleOnly ? ' WHERE eligible = 1' : ''}`).bind(...slugs.map((s) => `%|${s}|%`)).first<Record<string, number>>();
+    return Object.fromEntries(slugs.map((s, i) => [s, Number(row?.[`c${i}`] ?? 0)]));
+  });
 }
+
+/** How many recalls of one hazard sit in each category (one scan, cached). */
+export async function hazardByCategory(db: D1Database, slug: string): Promise<{ category: string; n: number }[]> {
+  return memo(db, `hazardByCategory:${slug}`, 6 * HOURS, async () => {
+    const { results } = await db.prepare('SELECT category, COUNT(*) AS n FROM recalls WHERE hazards LIKE ? GROUP BY category ORDER BY n DESC').bind(`%|${slug}|%`).all<{ category: string; n: number }>();
+    return results;
+  });
+}
+
+export const totalRecalls = (db: D1Database) => memo(db, 'totalRecalls', 3 * HOURS, () => countCards(db, filters.all()));
 
 export async function brandName(db: D1Database, slug: string): Promise<string | null> {
   const row = await db.prepare('SELECT brand FROM recalls WHERE brand_slug = ? ORDER BY date DESC LIMIT 1').bind(slug).first<{ brand: string }>();
