@@ -1,165 +1,67 @@
-# CheaperPack: Make Your Tech Last Longer
+# Recall Radar (working name)
 
-A free, source-led site for keeping phones and other technology useful for longer: device facts,
-repair and troubleshooting guides, cable compatibility, upgrade comparisons and used-device buying
-advice. Every device fact links to the manufacturer's specification page, and nothing relies on a
-paid API.
+A self-updating tracker of US consumer product recalls, built on the public CPSC recall feed. It runs
+entirely on Cloudflare (a Worker plus a D1 database) and needs no manual upkeep once deployed.
 
-## Site map
+- **Data:** [CPSC Recall Retrieval Web Services](https://www.cpsc.gov/Recalls/CPSC-Recalls-Application-Program-Interface-API-Information), about 10,000 recalls since 1973.
+- **Updates:** a Cron Trigger (`wrangler.jsonc`, twice a day) fetches new and changed recalls, upserts them into D1 and pings IndexNow.
+- **Pages:** rendered on the edge from D1 and cached. No client-side JavaScript, one inline stylesheet, no web fonts.
 
-| Section | Routes | Source of truth |
-| --- | --- | --- |
-| Device library with search | `/devices/` | `src/data/devices.ts` |
-| Model pages (29 iPhones) | `/devices/<model>/` | `src/data/devices.ts` |
-| Series hubs | `/devices/series/<series>/` | `src/data/devices.ts` |
-| Port lists | `/ports/usb-c/`, `/ports/lightning/` | derived from device data |
-| Compare tool and generation comparisons | `/compare/`, `/compare/<a>-vs-<b>/` | derived from device data |
-| Guides (10) | `/guides/<slug>/` | `src/data/guides.ts` |
-| Cable finder | `/compatibility/` | device data |
-| Tools (11, incl. Repair vs Replace) | `/tools/<slug>/` | `src/data/tools.ts` |
-| About / method | `/about/` | |
+## What the site contains
 
-Adding a model is one row in `ROWS` in `src/data/devices.ts` (with its Apple spec URL); series pages, port
-lists, comparisons, FAQs, structured data and the sitemap follow automatically. Adding a guide is one
-object in `src/data/guides.ts`. Data tests (`npm test`) check slugs, source links, port-by-year and guide links.
+| Route | What it is |
+| --- | --- |
+| `/` | Search, latest recalls, categories, hazards, brands, FAQ |
+| `/recall/<number>-<slug>/` | One page per recall: summary, what to do, affected products, photos, where sold, history, FAQ, related recalls |
+| `/category/<slug>/`, `/hazard/<slug>/`, `/brand/<slug>/` | Hubs with counts, common hazards, FAQ and paginated lists |
+| `/recalls/`, `/browse/`, `/brands/`, `/search/` | Archives and search (search is `noindex`) |
+| `/guides/…` | Three evergreen guides sourced from CPSC pages |
+| `/about/ /privacy/ /terms/ /contact/` | Pages AdSense and users expect |
+| `/sitemap.xml /robots.txt /feed.xml /ads.txt` | Generated; `ads.txt` appears once `ADSENSE_PUB_ID` is set |
 
-## SEO
+## SEO design
 
-Per-page title, description and canonical; `index,follow` with large-preview directives; Open Graph and
-Twitter cards; JSON-LD for Organization, WebSite (with `SearchAction` for `/devices/?q=`), BreadcrumbList,
-FAQPage, Article, HowTo, ProductModel, ItemList and WebApplication; a sitemap with `lastmod`;
-and dense internal linking (related guides, devices, series, comparisons and tools on each page type).
-The CSP in `public/_headers` forbids inline scripts, so `assetsInlineLimit` is `0`.
+- **Quality gate** (`src/derive.ts`): a recall is indexable only if it is from 2019 or later and has a full description, hazard, remedy, product, units, sellers and images (quality score ≥ 70). Everything else is served with `noindex,follow` and left out of the sitemap.
+- **Drip indexing** (`src/seo.ts`): the backlog enters the index newest first, 150 pages on launch day and 40 more each day. Ranks never change, so a page is never switched back to `noindex`. Recalls published after launch are always indexable.
+- **Hubs** (categories, hazards, brands with 3+ recalls) are the pages that add something beyond CPSC's own site. Recall pages carry structured facts, FAQ, history and related links, and none is under 350 words.
+- Canonical URLs, trailing-slash redirects, breadcrumbs, Article, FAQPage, ItemList and WebSite JSON-LD, RSS feed, IndexNow pings, `lastmod` in the sitemap.
 
-- **Framework:** [Astro](https://astro.build) 7, every page pre-rendered to static HTML, with Tailwind CSS 4 and plain TypeScript (no UI framework).
-- **Hosting:** Cloudflare Workers static assets, live at https://cheaperpack.com. The same build also works on Cloudflare Pages.
-- **OCR:** the official [PaddleOCR.js](https://github.com/PaddlePaddle/PaddleOCR/tree/main/paddleocr-js) SDK with ONNX Runtime Web, running in a Web Worker and loaded only when someone scans.
+## AdSense readiness
 
-## Tools
+Layout reserves fixed-height ad containers so ads never shift the page. Nothing loads until you configure it.
 
-| Tool | Route | What it does |
-| --- | --- | --- |
-| Repair vs Replace | `/tools/repair-vs-replace/` | Cost per month of a repair vs a replacement, net of resale |
-| Smart Price Comparison | `/tools/price-comparison/` | Price per kg / L / piece / oz for 2–8 products. Type “2kg for 210, 1.5kg for 189” or scan a price tag |
-| Bulk Buying Calculator | `/tools/bulk-buying-calculator/` | Regular vs bulk pack: savings, break-even amount, waste before expiry |
-| BOGO Deal Calculator | `/tools/bogo-calculator/` | Buy X get Y (free or discounted), per-order limits, vs a plain discount |
-| Smart Deal Calculator | `/tools/deal-calculator/` | Stacked % / flat discounts, coupons, capped cashback, delivery, buy X get Y |
-| Subscription Calculator | `/tools/subscription-calculator/` | Monthly/yearly totals, biggest costs, savings from cancelling, renewals, annual vs monthly |
-| EMI vs Cash | `/tools/emi-vs-cash/` | Reducing-balance EMI, fees, cash and no-cost-EMI discounts, effective yearly rate |
-| Cost Per Use | `/tools/cost-per-use/` | Price + upkeep − resale, divided by uses, compared across options |
-| Electricity Cost | `/tools/electricity-cost/` | kWh and cost per day/month/year per appliance, with standby power |
-| Grocery Budget Planner | `/tools/grocery-budget/` | Budget, items, ticking off, saved and reusable lists, copy/CSV/share |
-| Receipt Expense Analyzer | `/tools/receipt-analyzer/` | On-device receipt OCR, editable items, categories, spending across receipts |
+1. Apply at adsense.google.com once the site has traffic. Pages for privacy, terms, about and contact already exist; set `CONTACT_EMAIL` first.
+2. Set `ADSENSE_PUB_ID` (for example `ca-pub-1234567890123456`) in `wrangler.jsonc` and deploy. That loads the AdSense script and serves `/ads.txt`.
+3. Optional: set `ADSENSE_SLOT` to turn on the manual in-content slots. Leave it empty to use Auto ads only.
+4. In the AdSense dashboard, enable Google's consent message for EEA, UK and Swiss visitors.
 
-Shared across the tools:
-
-- **Results as you type**, with clear messages for missing, zero, negative and invalid values.
-- **“Show me why”** under each result, showing the arithmetic behind the recommendation.
-- **Currency** choice of INR, USD, EUR or GBP, defaulting from the browser language. It's remembered across tools and never converts amounts.
-- **Recent calculations** kept in the browser, with delete-one and clear-all.
-- **Share links** that carry the inputs in the URL `#fragment`, which browsers don't send to the server. Subscriptions and receipts can't be shared.
-- **Phones:** a result bar at the bottom appears while the result is scrolled out of view.
-- **Privacy:** the Privacy page deletes everything CheaperPack stored (localStorage and IndexedDB).
-
-## Run it locally
-
-You need **Node.js 22.22 or newer**.
+## Develop
 
 ```bash
 npm install
+npm run db:local        # create the local D1 tables
+npm run backfill:local  # load the full CPSC history (about a minute)
+npm run dev             # http://localhost:8787
+npm test && npm run check
 ```
+
+Test the daily job locally with `npx wrangler dev --test-scheduled` and open `/__scheduled?cron=x`.
+
+## Deploy
 
 ```bash
-npm run dev
-```
-
-Open http://localhost:4321.
-
-| Command | What it does |
-| --- | --- |
-| `npm test` | Runs the unit tests: unit conversion, parsing, discounts, cashback, BOGO, EMI, electricity, budgets, receipts and OCR text. |
-| `npm run build` | Type-checks and builds the static site into `dist/`. |
-| `npm run preview` | Builds, then serves `dist/` with Wrangler at http://localhost:8787, with the production headers. Use this to test scanning. |
-| `npm run deploy` | Builds and deploys to Cloudflare Workers. |
-| `npm run og` | Regenerates `public/og.png` and `public/apple-touch-icon.png`. |
-| `npm run ocr:models` | Restores or re-verifies the OCR model files in `src/assets/ocr/` (SHA-256 checked). |
-
-## Project layout
-
-```
-src/
-  data/devices.ts         Verified device facts, connector records and source URLs
-  data/guides.ts          Source-linked repair and second-hand buying guides
-  data/tools.ts            Tool registry: names, SEO text, categories, related tools
-  layouts/Base.astro       <head> metadata, header, footer
-  components/
-    layout/                Header, Footer, ToolLayout (breadcrumbs, FAQ, related tools, JSON-LD)
-    shared/                Field, Choice, SelectField, UnitSelect, ResultPanel, ToolCard, Icon…
-    tools/                 Repeated rows for individual tools (deals, appliances, options)
-    tool/                  Smart Price Comparison markup
-  lib/
-    calculations/          Pure calculation modules + tests (compare, units, deals, bulk, bogo,
-                           subscriptions, emi, cost-per-use, electricity, budget, money, validate)
-    parsing/               Number parsing, free-text and price-tag parsing, receipt parsing + tests
-    formatting/            Currency lists and number formatting
-    ocr/                   Shared OCR: client (worker, progress, errors), worker, engine
-    storage/               localStorage helpers, history, IndexedDB (receipts), share state
-    ui/                    Browser helpers: tool controller, fields, rows, currency, share, render
-  scripts/                 Page scripts (price tool, scanner sheet, tools/*)
-  pages/                   /, /devices/*, /guides/*, /compatibility/, /tools/*, /faq/, /privacy/, 404
-  styles/app.css           White design system (Tailwind theme + shared components)
-  assets/ocr/              PP-OCRv6 tiny detection and recognition models (Apache-2.0)
-public/                    _headers, robots.txt, icons, og.png, Google verification file
-```
-
-Calculation logic never touches the DOM. Every tool page combines `ToolLayout` + `ResultPanel`
-with a script that reads fields, calls a calculation module and renders the result through
-`lib/ui/tool.ts`.
-
-## OCR notes
-
-- **Lazy loading:** nothing OCR-related loads until someone opens the scanner or picks a receipt photo. Tools that don't scan never load OCR code. The first scan downloads about 13 MB (OpenCV.js, the ONNX Runtime WebAssembly file and 6.3 MB of models). These are served from this site with year-long immutable caching, so later scans start in about a second.
-- **Own worker:** OCR runs in our own Web Worker, using the SDK's direct mode with an OpenCV `Mat` as input. The SDK's built-in worker mode would also load OpenCV.js on the page itself. A Vite plugin in `astro.config.mjs` stops the unused 11 MB SDK worker from being emitted.
-- **WebAssembly only:** `onnxruntime-web` is aliased to its WebAssembly-only build. The WebGPU runtime is a 28 MB file, over Cloudflare's 25 MiB per-file limit, and isn't reliably faster for these small models on phones. The largest deployed file is 14.2 MB.
-- **Headers:** `/tools/*` is cross-origin isolated (COOP/COEP) so OCR can use several CPU threads. OpenCV.js generates code with `new Function`, so `_headers` removes the CSP from `/_astro/*` files only. Pages keep a strict CSP without `unsafe-eval`.
-- **Receipts:** text boxes are grouped into printed lines. Lines ending in an amount become items, while totals, tax, discounts and payment lines are kept apart. The page warns when items, tax and discounts don't add up to the printed total. Images are never stored.
-
-## Deploying
-
-The site is deployed as a Cloudflare Worker named `cheaperpack` (static assets only). It's
-served at `cheaperpack.com`, `www.cheaperpack.com` and `cheaperpack.cheaperpack.workers.dev`
-through the `routes` in `wrangler.jsonc`.
-
-```bash
-npx wrangler login
-```
-
-```bash
+npx wrangler d1 create recalls          # put the printed id into wrangler.jsonc
+npx wrangler d1 migrations apply recalls --remote
+npm run backfill:remote                 # run once
+# set SITE_URL, SITE_NAME, LAUNCH_DATE and CONTACT_EMAIL in wrangler.jsonc, then:
 npm run deploy
 ```
 
-**Cloudflare Pages instead:** the same `dist/` works, including `_headers`. For example:
+Attach the domain in the Cloudflare dashboard (Workers → recall-tracker → Settings → Domains) or add a
+`routes` entry with `custom_domain: true`. Then submit `https://<your-domain>/sitemap.xml` in Google Search Console.
 
-```bash
-npx wrangler pages deploy dist --project-name cheaperpack
-```
+## Limits worth knowing
 
-Use either Workers or Pages for the domain, not both. Moving to Pages means removing the
-custom domains from the Worker first.
-
-### Still to do in the Cloudflare and Google dashboards
-
-- **Redirect www to the main domain:** Rules → Redirect Rules → template “Redirect from WWW to root” (301).
-- **Google Search Console:** verify (the HTML file is in `public/`, or use a Domain property via DNS), then submit `https://cheaperpack.com/sitemap-index.xml`.
-
-## Ownership content and compatibility data
-
-- **Devices:** add a model in `src/data/devices.ts` only when its displayed facts have a manufacturer source URL. Each static device route is generated from this registry.
-- **Guides:** add source-linked repair or buying content in `src/data/guides.ts`. Keep advice reversible and cite the manufacturer or other primary reference used.
-- **Compatibility:** `src/pages/compatibility.astro` currently answers only whether a cable's phone-end plug matches the charging port. It does not claim speed, data capability, product quality or case/part fit. Unknown models remain unknown until sourced data is added.
-
-## Things to know when changing the site
-
-- **Adding a tool:** add it to `src/data/tools.ts` (the homepage, hub, footer and related links update automatically), put the maths in `src/lib/calculations/` with a test, and build the page with `ToolLayout` and `ResultPanel`.
-- **Analytics:** Google Analytics 4 is set up in `src/scripts/analytics.ts` and loaded from `Base.astro`. It sends the page address without the `#fragment`, so share-link values never reach Google. Its domains are allowed in the CSP in `public/_headers`. If you change analytics, update `src/pages/privacy.astro` to match. Visitors in the EU/UK normally need to consent before analytics cookies are set; there is no consent banner yet.
-- **Units:** to add a unit, add it to `UNITS` in `src/lib/calculations/units.ts` with its exact size in g, ml or items, and to `TOOL_UNITS` in `src/lib/storage/tool-state.ts`.
+- Runs on Cloudflare's free plan: the daily sync handles a few dozen records, well inside the free CPU limit. The one-off backfill runs from your computer, not the Worker.
+- Recall pages compete with cpsc.gov for the same names, so expect hubs (categories, brands, hazards) and long-tail searches to bring most traffic.
+- CPSC's terms: recall notices and photos may be copied; do not imply CPSC endorsement; credit CPSC. The site does all three.

@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://cheaperpack.com/sitemap-index.xml

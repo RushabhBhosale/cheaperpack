@@ -1,25 +1,43 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  // The Worker's name in your Cloudflare dashboard.
-  "name": "cheaperpack",
+  "name": "recall-tracker",
+  "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
-  // Keep the cheaperpack.<subdomain>.workers.dev address working too.
   "workers_dev": true,
 
-  // Static-assets-only Worker: Cloudflare serves the pre-rendered Astro build
-  // from `dist/`. There is no Worker script, so requests never run code.
-  "assets": {
-    "directory": "./dist",
-    // /faq -> /faq/ and serves /faq/index.html
-    "html_handling": "auto-trailing-slash",
-    // Unknown URLs get dist/404.html with a 404 status.
-    "not_found_handling": "404-page"
+  // Static files (favicon, social image, search-console verification) are served straight from
+  // /public without running the Worker. Everything else is rendered by the Worker from D1.
+  "assets": { "directory": "./public" },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "recalls",
+      // Replace with the id printed by `npx wrangler d1 create recalls` before the first deploy.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Pull new and updated recalls from CPSC twice a day.
+  "triggers": { "crons": ["23 6,18 * * *"] },
+
+  "vars": {
+    "SITE_NAME": "Recall Radar",
+    "SITE_URL": "http://localhost:8787",
+    // Day the site goes live. Drives how many older recalls are allowed into the index (see src/seo.ts).
+    "LAUNCH_DATE": "2026-10-25",
+    // Shown on the Contact page. Leave empty to hide until you choose a public address.
+    "CONTACT_EMAIL": "",
+    // Fill in after AdSense approves the site, e.g. "ca-pub-1234567890123456". Empty = no ads, no ad script.
+    "ADSENSE_PUB_ID": "",
+    // Optional ad unit id for the reserved in-content slots. Empty = Auto ads only.
+    "ADSENSE_SLOT": "",
+    "GA_ID": "",
+    "GSC_VERIFICATION": "",
+    // Random string; enables IndexNow pings (Bing and others). Served at /<key>.txt
+    "INDEXNOW_KEY": "b4d6f1a09c7e4d3f8a2b5c6d7e8f9012"
   },
 
-  // Custom domains. The cheaperpack.com zone must be active on the same
-  // Cloudflare account; deploying creates the DNS records and certificates.
-  "routes": [
-    { "pattern": "cheaperpack.com", "custom_domain": true },
-    { "pattern": "www.cheaperpack.com", "custom_domain": true }
-  ]
+  "observability": { "enabled": true }
 }

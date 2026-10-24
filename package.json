@@ -1,33 +1,28 @@
 {
-  "name": "cheaperpack",
-  "type": "module",
+  "name": "recall-tracker",
   "version": "1.0.0",
   "private": true,
-  "description": "CheaperPack.com: practical device ownership, repair, upgrade and compatibility guides.",
+  "type": "module",
+  "description": "A self-updating US consumer product recall tracker on Cloudflare Workers and D1, built from the CPSC recall feed.",
   "engines": {
     "node": ">=22.22.0"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro check && astro build",
-    "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy",
+    "dev": "wrangler dev",
+    "check": "tsc --noEmit",
     "test": "vitest run",
-    "og": "node scripts/make-images.mjs",
-    "ocr:models": "node scripts/fetch-ocr-models.mjs"
-  },
-  "dependencies": {
-    "@astrojs/sitemap": "^3.7.4",
-    "@paddleocr/paddleocr-js": "^0.4.2",
-    "astro": "^7.4.0"
+    "db:local": "wrangler d1 migrations apply recalls --local",
+    "backfill:local": "node --experimental-strip-types scripts/backfill.ts --local",
+    "backfill:remote": "node --experimental-strip-types scripts/backfill.ts --remote",
+    "images": "node scripts/make-images.mjs",
+    "deploy": "npm run check && npm test && wrangler deploy --var CACHE_VERSION:$(date +%s)"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.10",
-    "@tailwindcss/vite": "^4.3.3",
-    "sharp": "^0.35.5",
-    "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3",
-    "vitest": "^5.0.5",
+    "@cloudflare/workers-types": "^5.20261019.1",
+    "@types/node": "^22.20.5",
+    "sharp": "^0.34.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0",
     "wrangler": "^4.151.1"
   }
 }
