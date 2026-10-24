@@ -1,0 +1,16 @@
+---
+import Base from '../../layouts/Base.astro';
+import { GUIDES } from '../../data/guides';
+
+const title = 'Repair, troubleshooting and buying guides | CheaperPack';
+const description = 'Careful, source-linked guides for common phone troubleshooting and buying used devices.';
+---
+<Base title={title} description={description} jsonLd={[{ '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Tech ownership guides', url: 'https://cheaperpack.com/guides/' }]}>
+  <section class="page ownership-intro">
+    <h1>Clear steps for better ownership.</h1>
+    <p class="ownership-lede">Straightforward steps for troubleshooting, repair choices and buying a device second-hand. Each guide points back to its sources.</p>
+  </section>
+  <section class="page guide-list" aria-label="Guides">
+    {GUIDES.map((guide) => <a class="guide-row" href={`/guides/${guide.slug}/`}><span><small>{guide.type}</small><strong>{guide.title}</strong><span>{guide.short}</span></span><span class="device-arrow" aria-hidden="true">↗</span></a>)}
+  </section>
+</Base>

@@ -1,0 +1,95 @@
+---
+import ToolLayout from '../../components/layout/ToolLayout.astro';
+import Field from '../../components/shared/Field.astro';
+import CurrencySelect from '../../components/shared/CurrencySelect.astro';
+
+const faq = [
+  {
+    question: 'Where are my lists saved?',
+    answer: 'In this browser on this device only. Nothing is uploaded. Saved lists stay until you delete them or clear your browser data.',
+  },
+  {
+    question: 'How do I add items quickly?',
+    answer: 'Type the item and its price in one go, like “Milk 2 x 32” for two at 32 each, or “Rice 5kg 450”. You can change the name, quantity and price afterwards.',
+  },
+  {
+    question: 'Can I reuse a list?',
+    answer: 'Yes. Save a list, then use “Use again” to start a new trip with the same items, all unticked. Prices stay as they were so you can update them as you shop.',
+  },
+  {
+    question: 'Does it look up shop prices?',
+    answer: 'No. It only uses the prices you enter, so it works for any shop and nothing about your shopping leaves your device.',
+  },
+];
+---
+
+<ToolLayout slug="grocery-budget" intro="Set a budget, add items as you shop and see what’s left." faq={faq}>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-10">
+    <div class="grid grid-cols-1 gap-4" data-planner>
+      <div class="grid grid-cols-2 gap-3">
+        <Field label="List name" k="listname" type="text" value="Shopping list" />
+        <Field label="Budget" k="budget" prefix="currency" placeholder="e.g. 3000" />
+      </div>
+
+      <form class="flex items-end gap-2" data-add-form novalidate>
+        <div data-field class="min-w-0 flex-1">
+          <label class="block">
+            <span class="ui-label" data-label>Add an item</span>
+            <span class="ui-box"><input data-k="entry" type="text" autocomplete="off" enterkeyhint="done" placeholder="e.g. Milk 2 x 32" maxlength="80" /></span>
+          </label>
+          <p class="ui-error" data-error hidden></p>
+        </div>
+        <button type="submit" class="btn btn-primary !min-h-12 !rounded-[12px]">Add</button>
+      </form>
+      <p class="-mt-2 text-[13px] text-muted">Name, then price. “2 x 32” means two at 32 each.</p>
+      <p class="-mt-1 rounded-xl bg-subtle px-3.5 py-2.5 text-[15px] font-medium lg:hidden" data-mini hidden></p>
+
+      <div>
+        <ul class="divide-y divide-line rounded-card border border-line" data-items aria-label="Items"></ul>
+        <p class="rounded-card border border-dashed border-line p-5 text-center text-[15px] text-muted" data-items-empty>
+          Your list is empty. Add your first item above.
+        </p>
+      </div>
+      <p class="text-[14px] text-muted">
+        Not sure which pack to pick? <a href="/tools/price-comparison/" class="font-medium text-accent hover:underline">Compare prices</a> or check if the{' '}
+        <a href="/tools/bulk-buying-calculator/" class="font-medium text-accent hover:underline">bulk pack is worth it</a>.
+      </p>
+
+      <section aria-labelledby="lists-title" data-lists-wrap hidden>
+        <h2 id="lists-title" class="eyebrow px-1">Saved lists</h2>
+        <ul class="mt-2 divide-y divide-line rounded-card border border-line" data-lists></ul>
+      </section>
+    </div>
+
+    <div class="lg:sticky lg:top-20">
+      <section class="result-panel" aria-labelledby="budget-title">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="budget-title" class="eyebrow">Budget</h2>
+          <CurrencySelect />
+        </div>
+        <div class="mt-3" data-summary></div>
+        <div class="mt-5 grid grid-cols-2 gap-2 border-t border-line pt-4">
+          <button type="button" class="btn btn-secondary" data-save>Save list</button>
+          <button type="button" class="btn btn-secondary" data-new>New list</button>
+          <button type="button" class="btn btn-ghost" data-copy>Copy as text</button>
+          <button type="button" class="btn btn-ghost" data-csv>Download CSV</button>
+          <button type="button" class="btn btn-ghost col-span-2" data-share-list>Share list</button>
+        </div>
+      </section>
+      <p class="sr-only" role="status" aria-live="polite" data-live></p>
+    </div>
+  </div>
+
+  <Fragment slot="content">
+    <h2>Shopping on a budget</h2>
+    <p>
+      Set your budget before you shop and add items as you go. The planner shows the running total and what’s left, and turns
+      red if you go over. Tick items as they go in the basket to see what you still need to buy.
+    </p>
+    <p>Example: with a budget of ₹3,000 and items adding up to ₹2,450, you have ₹550 left.</p>
+  </Fragment>
+</ToolLayout>
+
+<script>
+  import '../../scripts/tools/grocery-budget';
+</script>

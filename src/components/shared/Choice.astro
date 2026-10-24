@@ -1,0 +1,27 @@
+---
+/** Segmented control (radio group). */
+interface Props {
+  label: string;
+  k: string;
+  options: { value: string; label: string }[];
+  value: string;
+  hideLabel?: boolean;
+  class?: string;
+}
+const { label, k, options, value, hideLabel, class: className } = Astro.props;
+const name = `${k}-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<fieldset class={className}>
+  <legend class:list={['ui-label', { 'sr-only': hideLabel }]}>{label}</legend>
+  <div class="ui-segmented">
+    {
+      options.map((o) => (
+        <label>
+          <input type="radio" name={name} data-k={k} value={o.value} checked={o.value === value} />
+          <span>{o.label}</span>
+        </label>
+      ))
+    }
+  </div>
+</fieldset>

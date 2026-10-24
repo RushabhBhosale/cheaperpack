@@ -1,0 +1,83 @@
+---
+import Base from '../layouts/Base.astro';
+
+const title = 'Privacy | CheaperPack';
+const description =
+  'CheaperPack runs in your browser. Prices, lists, subscriptions, photos and receipts stay on your device. We use Google Analytics to count visits.';
+---
+
+<Base title={title} description={description}>
+  <div class="page pt-8 sm:pt-12">
+    <div class="prose">
+      <h1>Privacy</h1>
+      <p class="lede">Every tool runs in your browser, and what you enter stays on your device. We only measure how the site is used, with Google Analytics.</p>
+
+      <h2>What stays on your device</h2>
+      <ul>
+        <li><strong>Everything you type.</strong> Prices, quantities and other values are calculated on your device and never sent anywhere.</li>
+        <li>
+          <strong>Photos and receipts.</strong> The price-tag scanner and the receipt analyzer read images inside your browser.
+          Images are never uploaded, and the receipt analyzer doesn’t keep the image, only the items and totals you save.
+        </li>
+        <li>
+          <strong>Saved data.</strong> Your currency, recent calculations, shopping lists and subscriptions are kept in your
+          browser’s local storage. Saved receipts are kept in its IndexedDB storage. Each tool has buttons to delete what it saved.
+        </li>
+        <li>
+          <strong>Share links.</strong> When you share a calculation, its values are in the part of the link after the “#”,
+          which browsers don’t send to the server. Subscriptions and receipts can’t be shared by link.
+        </li>
+      </ul>
+
+      <h2>Analytics</h2>
+      <p>
+        We use Google Analytics to see how many people visit, which pages and tools they use, and roughly where visits come
+        from, so we can improve the site. Google Analytics sets cookies (named <code>_ga</code>) and receives technical
+        information such as your browser, device type, approximate location and the page you came from.
+      </p>
+      <p>
+        It does <strong>not</strong> receive anything you type into the tools, your photos or receipts, or the values in a
+        share link: the page address is sent without the part after the “#”. Google processes this data under
+        <a href="https://policies.google.com/privacy" rel="noopener">its privacy policy</a>. To opt out, block cookies for
+        this site, use a tracker blocker, or install Google’s
+        <a href="https://tools.google.com/dlpage/gaoptout" rel="noopener">opt-out browser add-on</a>.
+      </p>
+
+      <h2>What we don’t do</h2>
+      <ul>
+        <li>No accounts and no ads. Apart from Google Analytics, no tracking scripts and no other cookies.</li>
+        <li>No paid services or external APIs. The scanner’s reading engine is downloaded from this site the first time you use it.</li>
+      </ul>
+
+      <h2>Hosting</h2>
+      <p>
+        The site is hosted on Cloudflare. Like any web host, Cloudflare processes technical information such as IP addresses
+        to deliver pages and protect the site from abuse.
+      </p>
+
+      <h2>Delete everything</h2>
+      <p>
+        This removes all CheaperPack data from this browser: history, lists, subscriptions, saved receipts and settings.
+        Analytics cookies are separate; clear them in your browser’s site settings.
+      </p>
+    </div>
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+      <button type="button" class="btn btn-secondary !border-bad/40 !text-bad" data-delete-all>Delete all CheaperPack data</button>
+      <p class="text-[15px] text-muted" role="status" aria-live="polite" data-delete-status></p>
+    </div>
+  </div>
+</Base>
+
+<script>
+  import { clearAllLocal } from '../lib/storage/local';
+  import { deleteDatabase } from '../lib/storage/idb';
+
+  const button = document.querySelector<HTMLButtonElement>('[data-delete-all]')!;
+  const status = document.querySelector<HTMLElement>('[data-delete-status]')!;
+  button.addEventListener('click', async () => {
+    if (!window.confirm('Delete all CheaperPack data from this browser? This can’t be undone.')) return;
+    clearAllLocal();
+    const ok = await deleteDatabase();
+    status.textContent = ok ? 'Done. All CheaperPack data has been deleted from this browser.' : 'Local data deleted. Saved receipts couldn’t be removed right now; close other CheaperPack tabs and try again.';
+  });
+</script>

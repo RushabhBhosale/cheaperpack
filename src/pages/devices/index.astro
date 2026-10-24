@@ -1,0 +1,27 @@
+---
+import Base from '../../layouts/Base.astro';
+import { DEVICES } from '../../data/devices';
+
+const title = 'Device guides: specs, repairs and compatibility | CheaperPack';
+const description = 'Model-specific iPhone facts, repair resources and verified connector compatibility in one place.';
+const jsonLd = [{
+  '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Device guides', url: 'https://cheaperpack.com/devices/',
+  mainEntity: { '@type': 'ItemList', itemListElement: DEVICES.map((device, index) => ({ '@type': 'ListItem', position: index + 1, name: device.name, url: `https://cheaperpack.com/devices/${device.slug}/` })) },
+}];
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <section class="page ownership-intro">
+    <h1>Know the device you own.</h1>
+    <p class="ownership-lede">Start with the exact model. Find its charging connection, manufacturer specifications and repair references.</p>
+  </section>
+  <section class="page device-list" aria-label="Available device guides">
+    {DEVICES.map((device) => (
+      <a class="device-row" href={`/devices/${device.slug}/`}>
+        <span class="device-mark" aria-hidden="true">{device.year}</span>
+        <span class="device-row-copy"><strong>{device.name}</strong><small>{device.screen} · {device.port} · Apple source links</small></span>
+        <span class="device-arrow" aria-hidden="true">↗</span>
+      </a>
+    ))}
+  </section>
+  <p class="page data-note">Coverage is intentionally small for now. We add a model when its key facts can be tied to a manufacturer source.</p>
+</Base>

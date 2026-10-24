@@ -1,0 +1,65 @@
+---
+import Base from '../layouts/Base.astro';
+import { DEVICES } from '../data/devices';
+
+const title = 'CheaperPack — keep your tech useful for longer';
+const description = 'Find model-specific device facts, source-backed repair guidance and verified cable compatibility before you buy, fix or replace tech.';
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'WebSite', name: 'CheaperPack', url: 'https://cheaperpack.com/', description },
+  { '@context': 'https://schema.org', '@type': 'ItemList', name: 'Device guides', itemListElement: DEVICES.map((device, index) => ({ '@type': 'ListItem', position: index + 1, name: device.name, url: `https://cheaperpack.com/devices/${device.slug}/` })) },
+];
+---
+
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <section class="page ownership-home-hero">
+    <div class="home-copy">
+      <h1 data-reveal>Keep good tech longer.</h1>
+      <p class="ownership-lede" data-reveal>Find the right connection, fix what you can, and buy your next device with fewer surprises.</p>
+      <div class="home-actions"><a class="ownership-button" href="/compatibility/">Check cable compatibility</a><a class="quiet-link" href="/devices/">Browse device guides <span aria-hidden="true">↗</span></a></div>
+    </div>
+    <div class="home-finder" data-ui>
+      <h2 data-reveal>Start with your model</h2>
+      <p data-reveal>Check the phone’s charging port before choosing a cable.</p>
+      <form action="/compatibility/" method="get">
+        <label for="home-device">Choose an iPhone</label>
+        <select id="home-device" name="device" required>
+          <option value="">Select model</option>
+          {DEVICES.map((device) => <option value={device.slug}>{device.name} · {device.port}</option>)}
+          <option value="unknown">I’m not sure</option>
+        </select>
+        <button type="submit">Check a cable <span aria-hidden="true">→</span></button>
+      </form>
+      <small>Connector fit only · no prices · manufacturer sources</small>
+    </div>
+  </section>
+
+  <section class="ownership-band">
+    <div class="page ownership-band-inner">
+      <h2 data-reveal>Make the useful choice.</h2>
+      <p data-reveal>Know what fits. Try the safe checks. Inspect a used phone before money changes hands.</p>
+    </div>
+  </section>
+
+  <section class="page home-paths">
+    <header class="section-heading"><div><h2 data-reveal>Give your tech another life.</h2></div><a class="quiet-link" data-reveal href="/guides/">All guides <span aria-hidden="true">↗</span></a></header>
+    <div class="home-path-list">
+      <a href="/compatibility/" class="home-path" data-reveal><span class="path-word">Find</span><span><strong>Check a cable before you order</strong><small>Match a cable’s phone-end plug to the port in the manufacturer specs.</small></span><span class="device-arrow" aria-hidden="true">↗</span></a>
+      <a href="/guides/iphone-wont-charge/" class="home-path" data-reveal><span class="path-word">Fix</span><span><strong>Try safe charging checks</strong><small>Start with the cable, power and port before arranging service.</small></span><span class="device-arrow" aria-hidden="true">↗</span></a>
+      <a href="/guides/buying-a-used-iphone/" class="home-path" data-reveal><span class="path-word">Choose</span><span><strong>Inspect a used iPhone</strong><small>Check Activation Lock, parts history, condition and seller terms.</small></span><span class="device-arrow" aria-hidden="true">↗</span></a>
+    </div>
+  </section>
+
+  <section class="home-devices">
+    <div class="page">
+      <header class="section-heading"><div><h2 data-reveal>Start with what you own.</h2></div><a class="quiet-link" data-reveal href="/devices/">All devices <span aria-hidden="true">↗</span></a></header>
+      <div class="home-device-list">
+        {DEVICES.map((device) => <a data-reveal href={`/devices/${device.slug}/`}><span><strong>{device.name}</strong><small>Introduced {device.year} · {device.screen}</small></span><span class="port-tag">{device.port}</span><span class="device-arrow" aria-hidden="true">↗</span></a>)}
+      </div>
+    </div>
+  </section>
+
+  <section class="page home-tools">
+    <div><h2 data-reveal>Keep the calculators that help you decide.</h2><p data-reveal>Compare unit prices, estimate cost per use or check whether an EMI offer changes the total.</p></div>
+    <a class="quiet-link" href="/tools/">Explore all calculators <span aria-hidden="true">↗</span></a>
+  </section>
+</Base>

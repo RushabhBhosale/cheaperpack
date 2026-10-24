@@ -1,0 +1,84 @@
+---
+import ToolLayout from '../../components/layout/ToolLayout.astro';
+import ResultPanel from '../../components/shared/ResultPanel.astro';
+import ExampleNote from '../../components/shared/ExampleNote.astro';
+import Choice from '../../components/shared/Choice.astro';
+import DealRow from '../../components/tools/DealRow.astro';
+import { compareDeals } from '../../lib/calculations/deals';
+import { encodeStateForBuild } from '../../lib/ui/share-build';
+
+const faq = [
+  {
+    question: 'What’s the difference between checkout price and effective cost?',
+    answer:
+      'The checkout price is what leaves your account when you order. Cashback usually arrives days or weeks later, so the effective cost is the checkout price minus the cashback. Both are shown, because only the checkout price matters for your budget today.',
+  },
+  {
+    question: 'Should discounts apply one after another or to the original price?',
+    answer:
+      'Most shops apply a coupon after the sale discount, so “one after another” is the usual choice: 10% then 10% off ₹1,000 is ₹810. Some offers each work from the original price, which gives ₹800. Check the offer terms; you can switch between the two.',
+  },
+  {
+    question: 'How is cashback worked out?',
+    answer:
+      'Percentage cashback is calculated on the order value after discounts, not on delivery, and is limited by the cap you enter. Flat cashback is taken as stated. Cashback is never more than what you paid.',
+  },
+  {
+    question: 'How are deals with different quantities compared?',
+    answer:
+      'When one deal gives you more items, for example a buy 1 get 1 offer, deals are ranked by the effective cost per item rather than the total.',
+  },
+];
+
+const example = compareDeals([
+  { price: 999, quantity: 1, discounts: [{ kind: 'percent', value: 20 }], stacking: 'sequential', delivery: 0 },
+  { price: 799, quantity: 1, discounts: [], stacking: 'sequential', delivery: 50 },
+]);
+const exampleLink = `#${encodeStateForBuild({ stacking: 'sequential', rows: [{ price: '999', qty: '1', d1: '20', d1k: 'pct' }, { price: '799', qty: '1', delivery: '50' }] })}`;
+---
+
+<ToolLayout slug="deal-calculator" intro="Compare offers and see which one really costs least, now and after cashback." faq={faq}>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-10">
+    <div data-tool>
+      <ExampleNote />
+      <ol class="grid gap-3" data-rows aria-label="Deals to compare">
+        <DealRow values={{ price: '999', d1: '20' }} />
+        <DealRow values={{ price: '799', delivery: '50' }} />
+      </ol>
+      <template data-row-template><DealRow /></template>
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <button type="button" class="btn btn-link" data-add>+ Add deal</button>
+        <Choice
+          label="Apply several discounts"
+          k="stacking"
+          value="sequential"
+          options={[
+            { value: 'sequential', label: 'One after another' },
+            { value: 'original', label: 'All on original price' },
+          ]}
+        />
+      </div>
+    </div>
+    <ResultPanel empty="Enter a price for each deal to see which costs least." />
+  </div>
+
+  <Fragment slot="content">
+    <h2>How the deal calculator works</h2>
+    <p>For each deal it works out three amounts:</p>
+    <ul>
+      <li><strong>Pay at checkout</strong>: price × items, minus discounts and coupons, plus delivery.</li>
+      <li><strong>Cashback later</strong>: credited after the purchase, limited by any cap.</li>
+      <li><strong>Effective cost</strong>: what the deal costs you once the cashback arrives.</li>
+    </ul>
+    <h2>Example</h2>
+    <p>
+      Deal A is ₹999 with 20% off. Deal B is ₹799 plus ₹50 delivery. Deal A costs ₹{example.results[0]!.checkout.toFixed(2)} and Deal B
+      ₹{example.results[1]!.checkout.toFixed(2)}, so Deal A is cheaper by ₹{example.difference.toFixed(2)}, even though Deal B has the lower
+      price tag. <a href={exampleLink}>Open this example</a>.
+    </p>
+  </Fragment>
+</ToolLayout>
+
+<script>
+  import '../../scripts/tools/deal';
+</script>

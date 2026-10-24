@@ -1,0 +1,75 @@
+---
+import ToolLayout from '../../components/layout/ToolLayout.astro';
+import ResultPanel from '../../components/shared/ResultPanel.astro';
+import ExampleNote from '../../components/shared/ExampleNote.astro';
+import Field from '../../components/shared/Field.astro';
+import ApplianceRow from '../../components/tools/ApplianceRow.astro';
+import { APPLIANCE_PRESETS, applianceUse } from '../../lib/calculations/electricity';
+
+const faq = [
+  {
+    question: 'How do I find an appliance’s wattage?',
+    answer:
+      'Look for a label or plate on the back or underside, or in the manual. It’s written in watts (W) or kilowatts (kW; 1 kW = 1,000 W). The presets give typical values you can adjust.',
+  },
+  {
+    question: 'Why might my bill be different?',
+    answer:
+      'Bills often include fixed charges, taxes and duties, and many tariffs charge a higher rate as you use more (slabs or tiers). Appliances like fridges and air conditioners also cycle on and off, so their real use depends on the weather and settings.',
+  },
+  {
+    question: 'What is standby power?',
+    answer: 'Power an appliance draws while plugged in but switched off or idle, such as a TV on standby or a charger left in the socket. It’s counted for every hour the appliance isn’t in use.',
+  },
+  {
+    question: 'What rate should I use?',
+    answer: 'Your price per unit (kWh) from your electricity bill. If your tariff has slabs, use the rate for the slab you usually reach.',
+  },
+];
+const ac = APPLIANCE_PRESETS[0]!;
+const exAc = applianceUse({ watts: ac.watts, hoursPerDay: ac.hours, daysPerMonth: 30, standbyWatts: 0, quantity: 1 }, 8);
+---
+
+<ToolLayout slug="electricity-cost" intro="Estimate what each appliance costs to run per day, month and year." faq={faq}>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-10">
+    <div data-tool>
+      <ExampleNote />
+      <div class="rounded-card border border-line p-4 sm:p-5">
+        <Field label="Electricity rate" k="rate" prefix="currency" suffix="per kWh (unit)" value="8" hint="From your bill: the price per unit" />
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2" aria-label="Add a common appliance">
+        {
+          APPLIANCE_PRESETS.map((p) => (
+            <button type="button" class="btn btn-secondary !min-h-9 !px-3 !text-[13px]" data-preset={JSON.stringify(p)}>
+              + {p.name}
+            </button>
+          ))
+        }
+      </div>
+      <ol class="mt-4 grid gap-3" data-rows aria-label="Appliances">
+        <ApplianceRow values={{ name: 'Air conditioner', watts: '1500', hours: '8', days: '30' }} />
+        <ApplianceRow values={{ name: 'Ceiling fan', watts: '75', hours: '10', days: '30', qty: '3' }} />
+      </ol>
+      <template data-row-template><ApplianceRow /></template>
+      <button type="button" class="btn btn-link mt-3" data-add>+ Add appliance</button>
+    </div>
+    <ResultPanel empty="Enter your rate and an appliance’s power and hours of use." />
+  </div>
+
+  <Fragment slot="content">
+    <h2>How electricity cost is calculated</h2>
+    <p class="formula">kWh = watts × hours ÷ 1,000 &nbsp;·&nbsp; cost = kWh × rate</p>
+    <p>
+      For example, a {ac.watts} W air conditioner used {ac.hours} hours a day for 30 days uses {exAc.kwhPerMonth} kWh a month. At 8 per kWh
+      that’s about {exAc.costPerMonth.toLocaleString('en-IN')} a month.
+    </p>
+    <p>
+      These are estimates. Real bills add fixed charges and taxes, and slab tariffs charge more as use rises. Fridges and air
+      conditioners cycle on and off, so their actual use is often lower than their rated power suggests.
+    </p>
+  </Fragment>
+</ToolLayout>
+
+<script>
+  import '../../scripts/tools/electricity';
+</script>

@@ -1,0 +1,48 @@
+---
+import Base from '../../layouts/Base.astro';
+import { DEVICES } from '../../data/devices';
+
+export function getStaticPaths() {
+  return DEVICES.map((device) => ({ params: { slug: device.slug }, props: { device } }));
+}
+
+const { device } = Astro.props;
+const title = `${device.name}: specifications, repair and compatibility | CheaperPack`;
+const description = `Verified ${device.name} facts, charging connector compatibility, and manufacturer repair and support links.`;
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'Product', name: device.name, brand: { '@type': 'Brand', name: 'Apple' }, model: device.name, url: `https://cheaperpack.com/devices/${device.slug}/` },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://cheaperpack.com/' },
+    { '@type': 'ListItem', position: 2, name: 'Devices', item: 'https://cheaperpack.com/devices/' },
+    { '@type': 'ListItem', position: 3, name: device.name, item: `https://cheaperpack.com/devices/${device.slug}/` },
+  ] },
+];
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <article class="page device-page">
+    <nav class="ownership-breadcrumb" aria-label="Breadcrumb"><a href="/devices/">Devices</a><span aria-hidden="true">/</span><span>{device.name}</span></nav>
+    <header class="device-hero">
+      <div><h1>{device.name}</h1><p class="device-meta">Apple · introduced {device.year}</p><p class="ownership-lede">A practical reference for keeping this model working, choosing the right connection and checking it before you buy.</p></div>
+      <div class="device-spec-plate" aria-label={`${device.name} charging connector`}><span>Charging port</span><strong>{device.port}</strong><small>{device.screen} display</small></div>
+    </header>
+    <section class="device-facts" aria-labelledby="facts-heading">
+      <h2 id="facts-heading">Verified at a glance</h2>
+      <dl>
+        <div><dt>Introduced</dt><dd>{device.year}</dd></div>
+        <div><dt>Display</dt><dd>{device.screen}</dd></div>
+        <div><dt>Chip</dt><dd>{device.chip}</dd></div>
+        <div><dt>Wireless charging</dt><dd>{device.wirelessCharging}</dd></div>
+      </dl>
+      <a class="source-link" href={device.specsUrl} target="_blank" rel="noreferrer">Check Apple’s full technical specifications ↗</a>
+    </section>
+    <section class="device-action-band">
+      <div><h2>Before you replace or repair it</h2><p>Match accessories by exact model and connector. For internal repairs, follow the model-specific manual and safety instructions.</p></div>
+      <div class="action-links"><a href={`/compatibility/?device=${device.slug}`} class="ownership-button">Check a cable</a><a href="/guides/iphone-wont-charge/">Troubleshoot charging</a></div>
+    </section>
+    <section class="source-list">
+      <h2>Manufacturer repair and support</h2>
+      <p>Availability and repair options depend on the country and the specific issue.</p>
+      <ul><li><a href={device.repairUrl} target="_blank" rel="noreferrer">{device.slug === 'iphone-14' ? 'Apple service and repair options' : `Apple ${device.name} repair reference`}</a></li><li><a href="/guides/buying-a-used-iphone/">Used iPhone inspection checklist</a></li></ul>
+    </section>
+  </article>
+</Base>

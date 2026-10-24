@@ -1,0 +1,160 @@
+---
+import ToolLayout from '../../components/layout/ToolLayout.astro';
+import CurrencySelect from '../../components/shared/CurrencySelect.astro';
+
+const faq = [
+  {
+    question: 'Is my receipt uploaded anywhere?',
+    answer:
+      'No. The photo is read inside your browser and never leaves your device. CheaperPack doesn’t keep the image; only the items and totals you choose to save are stored in this browser.',
+  },
+  {
+    question: 'What if it reads something wrong?',
+    answer:
+      'Receipts vary a lot, so check every line before saving. You can edit names and amounts, change categories, add missing items and delete wrong ones. If the items don’t add up to the receipt total, you’ll see a warning.',
+  },
+  {
+    question: 'Why is the first scan slower?',
+    answer: 'The reading engine (about 13 MB) downloads the first time and is kept by your browser, so later scans start much faster.',
+  },
+  {
+    question: 'How do I delete my saved receipts?',
+    answer: 'Use the × next to a receipt to delete it, or “Delete all receipts”. The Privacy page can remove all CheaperPack data at once.',
+  },
+];
+---
+
+<ToolLayout slug="receipt-analyzer" intro="Photograph a receipt, check what it reads, and see where your money goes. All on your device." faq={faq}>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-10">
+    <div class="grid grid-cols-1 gap-4" data-receipt>
+      <!-- 1. Start -->
+      <section class="rounded-card border border-line p-4 sm:p-5" data-step="start">
+        <h2 class="text-[17px] font-semibold">Add a receipt</h2>
+        <p class="mt-1 text-[15px] text-muted" data-start-note>
+          The photo is read on this device and never uploaded. The first scan downloads the reading engine (about 13 MB).
+        </p>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <label class="btn btn-primary !min-h-14 !rounded-[14px] cursor-pointer focus-within:outline-2 focus-within:outline-accent">
+            Take photo
+            <input type="file" accept="image/*" capture="environment" class="sr-only" data-file />
+          </label>
+          <label class="btn btn-secondary !min-h-14 !rounded-[14px] cursor-pointer focus-within:outline-2 focus-within:outline-accent">
+            Choose image
+            <input type="file" accept="image/*" class="sr-only" data-file />
+          </label>
+        </div>
+        <button type="button" class="btn btn-link mt-2" data-manual>Or enter a receipt by hand</button>
+      </section>
+
+      <!-- 2. Reading -->
+      <section class="rounded-card border border-line p-4 sm:p-5" data-step="reading" hidden>
+        <div class="flex items-center gap-3">
+          <img alt="" class="size-16 shrink-0 rounded-xl object-cover ring-1 ring-line" data-thumb />
+          <div class="min-w-0 flex-1">
+            <p class="text-[15px] font-medium" data-progress-text>Preparing the photo…</p>
+            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-subtle" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" data-progress>
+              <div class="ui-bar h-full w-1/3 animate-pulse rounded-full bg-accent" data-progress-bar></div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-ghost mt-3" data-cancel>Cancel and enter by hand</button>
+      </section>
+
+      <!-- 3. Review -->
+      <section class="rounded-card border border-line p-4 sm:p-5" data-step="review" hidden aria-labelledby="review-title">
+        <h2 id="review-title" class="text-[17px] font-semibold">Check the receipt</h2>
+        <div class="mt-2" data-messages></div>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="ui-label">Shop</span>
+            <span class="ui-box"><input type="text" maxlength="60" data-store placeholder="Optional" /></span>
+          </label>
+          <label class="block">
+            <span class="ui-label">Date</span>
+            <span class="ui-box"><input type="date" data-date /></span>
+          </label>
+        </div>
+        <h3 class="eyebrow mt-5">Items</h3>
+        <ul class="mt-2 grid gap-2" data-items aria-label="Items on the receipt"></ul>
+        <div class="mt-2 flex flex-wrap gap-1">
+          <button type="button" class="btn btn-link" data-add-item>+ Add item</button>
+          <label class="btn btn-link cursor-pointer focus-within:outline-2 focus-within:outline-accent">
+            + Add another photo of this receipt
+            <input type="file" accept="image/*" class="sr-only" data-file-more />
+          </label>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-4">
+          <label class="block">
+            <span class="ui-label">Receipt total</span>
+            <span class="ui-box"><span class="ui-affix" data-cur aria-hidden="true">₹</span><input type="text" inputmode="decimal" data-total placeholder="From the receipt" /></span>
+          </label>
+          <div>
+            <span class="ui-label">Items add up to</span>
+            <p class="stat flex min-h-12 items-center text-[20px] font-semibold" data-items-sum>—</p>
+          </div>
+          <label class="block">
+            <span class="ui-label">Tax not in item prices</span>
+            <span class="ui-box"><span class="ui-affix" data-cur aria-hidden="true">₹</span><input type="text" inputmode="decimal" data-tax placeholder="0" /></span>
+          </label>
+          <label class="block">
+            <span class="ui-label">Discounts</span>
+            <span class="ui-box"><span class="ui-affix" data-cur aria-hidden="true">₹</span><input type="text" inputmode="decimal" data-discount placeholder="0" /></span>
+          </label>
+        </div>
+        <p class="mt-2 text-[14px]" data-check role="status" aria-live="polite"></p>
+        <details class="mt-3 text-[14px] text-muted" data-raw-wrap hidden>
+          <summary class="py-1 font-medium text-ink-2">Text found in the photo</summary>
+          <pre class="mt-1 max-h-56 overflow-auto rounded-xl bg-subtle p-3 font-sans text-[13px] whitespace-pre-wrap" data-raw></pre>
+        </details>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <button type="button" class="btn btn-primary" data-save>Save receipt</button>
+          <button type="button" class="btn btn-ghost" data-restart>Start over</button>
+        </div>
+      </section>
+
+      <!-- Saved receipts -->
+      <section aria-labelledby="saved-title" data-saved-wrap hidden>
+        <div class="flex items-center justify-between px-1">
+          <h2 id="saved-title" class="eyebrow">Saved receipts</h2>
+          <button type="button" class="btn btn-ghost !min-h-9 !px-2 !text-[13px]" data-delete-all>Delete all receipts</button>
+        </div>
+        <ul class="mt-2 divide-y divide-line rounded-card border border-line" data-saved></ul>
+      </section>
+    </div>
+
+    <div class="lg:sticky lg:top-20 grid gap-4">
+      <section class="result-panel" aria-labelledby="this-title">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="this-title" class="eyebrow">This receipt</h2>
+          <CurrencySelect />
+        </div>
+        <div class="mt-3" data-analysis>
+          <p class="text-[15px] leading-relaxed text-muted">Scan or enter a receipt to see the total, categories and biggest items.</p>
+        </div>
+      </section>
+      <section class="result-panel" aria-labelledby="all-title" data-all-wrap hidden>
+        <h2 id="all-title" class="eyebrow">All saved receipts</h2>
+        <div class="mt-3" data-all></div>
+      </section>
+      <p class="sr-only" role="status" aria-live="polite" data-live></p>
+    </div>
+  </div>
+
+  <Fragment slot="content">
+    <h2>How the receipt analyzer works</h2>
+    <ol>
+      <li>Take a photo of the receipt, flat and in good light, or choose one from your gallery.</li>
+      <li>CheaperPack reads the text on your device and picks out lines that end in an amount. Totals, tax, discounts and payment lines are kept separate.</li>
+      <li>Check the items, fix anything it misread and choose categories. If the items don’t add up to the total, you’ll see a warning.</li>
+      <li>Save it to track spending across receipts by category and month.</li>
+    </ol>
+    <p>
+      Long receipts read best in parts: scan the top, then use “Add another photo of this receipt” for the rest. Faded thermal
+      paper can be hard to read for any scanner, so check the amounts.
+    </p>
+  </Fragment>
+</ToolLayout>
+
+<script>
+  import '../../scripts/tools/receipt';
+</script>

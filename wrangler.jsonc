@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The Worker's name in your Cloudflare dashboard.
+  "name": "cheaperpack",
+  "compatibility_date": "2026-09-01",
+  // Keep the cheaperpack.<subdomain>.workers.dev address working too.
+  "workers_dev": true,
+
+  // Static-assets-only Worker: Cloudflare serves the pre-rendered Astro build
+  // from `dist/`. There is no Worker script, so requests never run code.
+  "assets": {
+    "directory": "./dist",
+    // /faq -> /faq/ and serves /faq/index.html
+    "html_handling": "auto-trailing-slash",
+    // Unknown URLs get dist/404.html with a 404 status.
+    "not_found_handling": "404-page"
+  },
+
+  // Custom domains. The cheaperpack.com zone must be active on the same
+  // Cloudflare account; deploying creates the DNS records and certificates.
+  "routes": [
+    { "pattern": "cheaperpack.com", "custom_domain": true },
+    { "pattern": "www.cheaperpack.com", "custom_domain": true }
+  ]
+}

@@ -1,0 +1,28 @@
+---
+/** Letter badge, editable name and remove button at the top of a repeated row. */
+interface Props {
+  placeholder: string;
+  value?: string;
+}
+const { placeholder, value } = Astro.props;
+---
+
+<div class="flex items-center gap-3">
+  <span class="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-[13px] font-semibold text-white" data-row-letter aria-hidden="true">A</span>
+  <label class="min-w-0 flex-1">
+    <span class="sr-only">Name (optional)</span>
+    <input
+      data-k="name"
+      data-row-placeholder
+      type="text"
+      maxlength="40"
+      autocomplete="off"
+      value={value}
+      placeholder={placeholder}
+      class="w-full rounded-lg bg-transparent px-1 py-1.5 text-[17px] font-semibold outline-none placeholder:text-ink"
+    />
+  </label>
+  <button type="button" data-remove hidden class="icon-btn" aria-label="Remove">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+  </button>
+</div>
