@@ -20,6 +20,26 @@ export function isIndexable(r: Pick<Recall, 'eligible' | 'idx_rank'>, env: Env, 
   return r.idx_rank === 0 || r.idx_rank <= indexBudget(env, now);
 }
 
+/** Car pages are far more numerous, so they are released a little faster: 200 on launch day, 100 more each day. */
+export function carsIndexBudget(env: Env, now = new Date()): number {
+  const launch = new Date(`${env.LAUNCH_DATE}T00:00:00Z`).getTime();
+  const days = Math.max(0, Math.floor((now.getTime() - launch) / 86400000));
+  return 200 + 100 * days;
+}
+
+export function isCarIndexable(row: { eligible?: number | boolean; idx_rank: number | null }, env: Env, now = new Date()): boolean {
+  if (row.eligible === 0 || row.eligible === false) return false;
+  if (row.idx_rank === null || row.idx_rank === undefined) return false;
+  return row.idx_rank === 0 || row.idx_rank <= carsIndexBudget(env, now);
+}
+
+/** Food events are released at 100 on launch day and 40 more each day. */
+export function foodIndexBudget(env: Env, now = new Date()): number {
+  const launch = new Date(`${env.LAUNCH_DATE}T00:00:00Z`).getTime();
+  const days = Math.max(0, Math.floor((now.getTime() - launch) / 86400000));
+  return 100 + 40 * days;
+}
+
 export interface Crumb { name: string; path: string }
 
 export const breadcrumbLd = (env: Env, crumbs: Crumb[]) => ({

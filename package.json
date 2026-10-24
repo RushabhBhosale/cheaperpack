@@ -15,7 +15,11 @@
     "backfill:local": "node --experimental-strip-types scripts/backfill.ts --local",
     "backfill:remote": "node --experimental-strip-types scripts/backfill.ts --remote",
     "images": "node scripts/make-images.mjs",
-    "deploy": "npm run check && npm test && wrangler deploy --var CACHE_VERSION:$(date +%s)"
+    "deploy": "npm run check && npm test && wrangler deploy --var CACHE_VERSION:$(date +%s)",
+    "backfill:cars:local": "node --experimental-strip-types scripts/backfill-cars.ts --local",
+    "backfill:cars:remote": "node --experimental-strip-types scripts/backfill-cars.ts --remote",
+    "backfill:food:local": "node --experimental-strip-types scripts/backfill-food.ts --local",
+    "backfill:food:remote": "node --experimental-strip-types scripts/backfill-food.ts --remote"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261019.1",

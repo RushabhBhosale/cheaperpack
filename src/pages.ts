@@ -1,3 +1,4 @@
+import { makesList } from './cars/db.ts';
 import { brandName, categoryStats, countCards, filters, groupBy, hazardCounts, listCards, relatedCards, searchCards, type RecallCard } from './db.ts';
 import { CATEGORIES, HAZARDS, OTHER_CATEGORY, displayNumber } from './derive.ts';
 import { esc, fmtDate, html, plural, raw, truncate, type Html } from './html.ts';
@@ -15,7 +16,7 @@ export const categoryInfo = (slug: string) => CATEGORIES.find((c) => c.slug === 
 export const hazardInfo = (slug: string) => HAZARDS.find((h) => h.slug === slug);
 
 const recallPath = (slug: string) => `/recall/${slug}/`;
-const pagePath = (base: string, page: number) => (page <= 1 ? base : `${base}page/${page}/`);
+export const pagePath = (base: string, page: number) => (page <= 1 ? base : `${base}page/${page}/`);
 
 const linkify = (text: string): Html =>
   raw(
@@ -24,10 +25,10 @@ const linkify = (text: string): Html =>
       .replace(/\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b/g, (m) => `<a href="mailto:${m}">${m}</a>`),
   );
 
-const crumbsHtml = (crumbs: Crumb[]): Html =>
+export const crumbsHtml = (crumbs: Crumb[]): Html =>
   html`<nav class="crumbs" aria-label="Breadcrumb">${crumbs.map((c, i) => (i === crumbs.length - 1 ? html`<span aria-current="page">${c.name}</span>` : html`<a href="${c.path}">${c.name}</a> / `))}</nav>`;
 
-function pagination(base: string, page: number, total: number): Html {
+export function pagination(base: string, page: number, total: number): Html {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   if (pages <= 1) return raw('');
   return html`<nav class="pager" aria-label="Pagination">${page > 1 ? html`<a rel="prev" href="${pagePath(base, page - 1)}">← Newer</a>` : html`<span></span>`}<span>Page ${page} of ${pages}</span>${page < pages ? html`<a rel="next" href="${pagePath(base, page + 1)}">Older →</a>` : html`<span></span>`}</nav>`;
@@ -40,12 +41,12 @@ function cardList(cards: RecallCard[]): Html {
   })}</ul>`;
 }
 
-function faqBlock(items: { q: string; a: string }[], heading = 'Frequently asked questions'): Html {
+export function faqBlock(items: { q: string; a: string }[], heading = 'Frequently asked questions'): Html {
   if (!items.length) return raw('');
   return html`<section aria-labelledby="faq"><h2 id="faq">${heading}</h2>${items.map((f) => html`<details><summary>${f.q}</summary><p>${f.a}</p></details>`)}</section>`;
 }
 
-const sentence = (s: string, n = 2) => (s.match(/[^.!?]+[.!?]+(?:\s|$)/g) ?? [s]).slice(0, n).join('').trim();
+export const sentence = (s: string, n = 2) => (s.match(/[^.!?]+[.!?]+(?:\s|$)/g) ?? [s]).slice(0, n).join('').trim();
 
 // ---------- recall detail ----------
 
@@ -290,11 +291,12 @@ ${query ? (cards.length ? html`<p>${plural(cards.length, 'recall')} found${cards
 // ---------- home ----------
 
 export async function homePage(env: Env): Promise<Page> {
-  const [latest, groups, total, brands] = await Promise.all([
+  const [latest, groups, total, brands, carMakes] = await Promise.all([
     listCards(env.DB, filters.all(), 12, 0),
     groupBy(env.DB, 'category'),
     countCards(env.DB, filters.all()),
     groupBy(env.DB, 'brand_slug', MIN_BRAND_RECALLS),
+    makesList(env.DB),
   ]);
   const cats = [...groups].sort((a, b) => Number(Boolean(categoryInfo(b.key)?.tech)) - Number(Boolean(categoryInfo(a.key)?.tech)) || b.n - a.n).filter((g) => g.key !== OTHER_CATEGORY.slug).slice(0, 12);
   const faq = [
@@ -304,8 +306,8 @@ export async function homePage(env: Env): Promise<Page> {
   ];
   return {
     meta: {
-      title: `${env.SITE_NAME}: check US product recalls (updated daily)`,
-      description: 'Search US consumer product recalls from the CPSC: power banks, chargers, e-bikes, appliances, baby products and toys. See the hazard, the remedy and the official notice.',
+      title: `${env.SITE_NAME}: check US product, car and food recalls (updated daily)`,
+      description: 'Search US product recalls (CPSC), car recalls (NHTSA) and food recalls (FDA): chargers, appliances, cars, allergens, Listeria and more. See the risk, the fix and the official notice.',
       path: '/', nav: '', fullWidth: true, jsonLd: [websiteLd(env), faqLd(faq)],
     },
     body: html`<section class="hero"><div class="wrap">
@@ -317,6 +319,7 @@ export async function homePage(env: Env): Promise<Page> {
 <div class="wrap">
 <h2>Latest recalls</h2>${cardList(latest)}<p><a href="/recalls/">See all recent recalls →</a></p>
 ${adSlot(env, 'home-top')}
+${carMakes.length ? html`<h2>Car recalls by make</h2><div class="tags">${carMakes.slice(0, 16).map((m) => html`<a href="/cars/${m.make_slug}/">${m.make} (${m.recalls})</a>`)}</div><p><a href="/cars/">Browse all car recalls by make, model and year →</a> · <a href="/food/">Food recalls (FDA) →</a></p>` : ''}
 <h2>Browse by category</h2><ul class="cards">${cats.map((g) => { const c = categoryInfo(g.key); return c ? html`<li><a class="card" href="/category/${c.slug}/"><b>${c.name}</b><small>${plural(g.n, 'recall')}</small></a></li>` : ''; })}</ul>
 <h2>Browse by hazard</h2><div class="tags">${HAZARDS.map((h) => html`<a href="/hazard/${h.slug}/">${h.name}</a>`)}</div>
 ${brands.length ? html`<h2>Brands with the most recalls</h2><div class="tags">${brands.filter((b) => b.name).slice(0, 14).map((b) => html`<a href="/brand/${b.key}/">${b.name} (${b.n})</a>`)}</div>` : ''}

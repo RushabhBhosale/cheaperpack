@@ -1,10 +1,15 @@
 # Recall Radar (working name)
 
-A self-updating tracker of US consumer product recalls, built on the public CPSC recall feed. It runs
+A self-updating tracker of US recalls in three sections, built on public government data. It runs
 entirely on Cloudflare (a Worker plus a D1 database) and needs no manual upkeep once deployed.
 
-- **Data:** [CPSC Recall Retrieval Web Services](https://www.cpsc.gov/Recalls/CPSC-Recalls-Application-Program-Interface-API-Information), about 10,000 recalls since 1973.
-- **Updates:** a Cron Trigger (`wrangler.jsonc`, twice a day) fetches new and changed recalls, upserts them into D1 and pings IndexNow.
+| Section | Source | Scope | Update job (twice a day) |
+| --- | --- | --- | --- |
+| Product recalls (`/recalls/`, `/category/`, `/brand/`, `/hazard/`) | [CPSC](https://www.cpsc.gov/Recalls/CPSC-Recalls-Application-Program-Interface-API-Information) | ~10,000 recalls since 1973 | `src/sync.ts`, by publish date |
+| Car recalls (`/cars/…`) | [NHTSA](https://api.nhtsa.gov) flat file and API | Passenger-vehicle campaigns since 2013, ~5,200 | `src/cars/sync.ts`, probes the next campaign numbers |
+| Food recalls (`/food/…`) | [openFDA](https://open.fda.gov) enforcement reports | FDA-regulated food since 2019, ~3,700 events | `src/food/sync.ts`, last three weeks of reports |
+
+Meat, poultry and egg recalls (USDA FSIS) are not included: its API blocks automated access.
 - **Pages:** rendered on the edge from D1 and cached. No client-side JavaScript, one inline stylesheet, no web fonts.
 
 ## What the site contains
@@ -15,14 +20,16 @@ entirely on Cloudflare (a Worker plus a D1 database) and needs no manual upkeep 
 | `/recall/<number>-<slug>/` | One page per recall: summary, what to do, affected products, photos, where sold, history, FAQ, related recalls |
 | `/category/<slug>/`, `/hazard/<slug>/`, `/brand/<slug>/` | Hubs with counts, common hazards, FAQ and paginated lists |
 | `/recalls/`, `/browse/`, `/brands/`, `/search/` | Archives and search (search is `noindex`) |
+| `/cars/`, `/cars/<make>/`, `/cars/<make>/<model>/<year>/`, `/cars/recall/<campaign>/` | Car recalls by make, model and year, plus one page per NHTSA campaign |
+| `/food/`, `/food/recall/<event>/`, `/food/hazard|category|firm/<slug>/` | Food recall events with lot codes, risk class and hubs |
 | `/guides/…` | Three evergreen guides sourced from CPSC pages |
 | `/about/ /privacy/ /terms/ /contact/` | Pages AdSense and users expect |
-| `/sitemap.xml /robots.txt /feed.xml /ads.txt` | Generated; `ads.txt` appears once `ADSENSE_PUB_ID` is set |
+| `/sitemap.xml` (index of `sitemap-recalls.xml`, `sitemap-cars.xml`, `sitemap-food.xml`), `/robots.txt`, `/feed.xml`, `/ads.txt` | Generated; `ads.txt` appears once `ADSENSE_PUB_ID` is set |
 
 ## SEO design
 
 - **Quality gate** (`src/derive.ts`): a recall is indexable only if it is from 2019 or later and has a full description, hazard, remedy, product, units, sellers and images (quality score ≥ 70). Everything else is served with `noindex,follow` and left out of the sitemap.
-- **Drip indexing** (`src/seo.ts`): the backlog enters the index newest first, 150 pages on launch day and 40 more each day. Ranks never change, so a page is never switched back to `noindex`. Recalls published after launch are always indexable.
+- **Drip indexing** (`src/seo.ts`): the backlog enters the index gradually (product recalls 150 + 40 a day, cars 200 + 100 a day, food 100 + 40 a day). Ranks never change, so a page is never switched back to `noindex`. Recalls published after launch are always indexable.
 - **Hubs** (categories, hazards, brands with 3+ recalls) are the pages that add something beyond CPSC's own site. Recall pages carry structured facts, FAQ, history and related links, and none is under 350 words.
 - Canonical URLs, trailing-slash redirects, breadcrumbs, Article, FAQPage, ItemList and WebSite JSON-LD, RSS feed, IndexNow pings, `lastmod` in the sitemap.
 
@@ -40,7 +47,9 @@ Layout reserves fixed-height ad containers so ads never shift the page. Nothing 
 ```bash
 npm install
 npm run db:local        # create the local D1 tables
-npm run backfill:local  # load the full CPSC history (about a minute)
+npm run backfill:local        # CPSC history (about a minute)
+npm run backfill:cars:local   # NHTSA flat file (about two minutes)
+npm run backfill:food:local   # openFDA reports (about two minutes)
 npm run dev             # http://localhost:8787
 npm test && npm run check
 ```
@@ -52,7 +61,9 @@ Test the daily job locally with `npx wrangler dev --test-scheduled` and open `/_
 ```bash
 npx wrangler d1 create recalls          # put the printed id into wrangler.jsonc
 npx wrangler d1 migrations apply recalls --remote
-npm run backfill:remote                 # run once
+npm run backfill:remote                 # run once each:
+npm run backfill:cars:remote
+npm run backfill:food:remote
 # set SITE_URL, SITE_NAME, LAUNCH_DATE and CONTACT_EMAIL in wrangler.jsonc, then:
 npm run deploy
 ```
@@ -64,4 +75,5 @@ Attach the domain in the Cloudflare dashboard (Workers → recall-tracker → Se
 
 - Runs on Cloudflare's free plan: the daily sync handles a few dozen records, well inside the free CPU limit. The one-off backfill runs from your computer, not the Worker.
 - Recall pages compete with cpsc.gov for the same names, so expect hubs (categories, brands, hazards) and long-tail searches to bring most traffic.
-- CPSC's terms: recall notices and photos may be copied; do not imply CPSC endorsement; credit CPSC. The site does all three.
+- CPSC's terms: recall notices and photos may be copied; do not imply CPSC endorsement; credit CPSC. NHTSA says site information is public and may be copied. openFDA data is CC0 and attribution is requested. The site credits all three and states it is independent.
+- The openFDA daily sync works without a key but shares an IP limit; add a free key as the `OPENFDA_KEY` secret (`npx wrangler secret put OPENFDA_KEY`) if runs ever fail with 429.

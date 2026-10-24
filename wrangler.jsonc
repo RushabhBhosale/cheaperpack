@@ -19,8 +19,8 @@
     }
   ],
 
-  // Pull new and updated recalls from CPSC twice a day.
-  "triggers": { "crons": ["23 6,18 * * *"] },
+  // Twice a day: new and updated product recalls from CPSC (:23), new vehicle recalls from NHTSA (:47), then FDA food recalls (:11).
+  "triggers": { "crons": ["23 6,18 * * *", "47 7,19 * * *", "11 8,20 * * *"] },
 
   "vars": {
     "SITE_NAME": "Recall Radar",

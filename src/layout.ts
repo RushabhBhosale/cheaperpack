@@ -14,7 +14,7 @@ export interface PageMeta {
   ogType?: 'website' | 'article';
   published?: string;
   modified?: string;
-  nav?: 'recalls' | 'categories' | 'brands' | 'guides' | '';
+  nav?: 'recalls' | 'cars' | 'food' | 'categories' | 'brands' | 'guides' | '';
   /** The page supplies its own `.wrap` containers (used for the full-width home hero). */
   fullWidth?: boolean;
   /** Query string value to prefill in the header search box. */
@@ -22,7 +22,9 @@ export interface PageMeta {
 }
 
 const NAV: { key: NonNullable<PageMeta['nav']>; href: string; label: string }[] = [
-  { key: 'recalls', href: '/recalls/', label: 'Latest recalls' },
+  { key: 'recalls', href: '/recalls/', label: 'Product recalls' },
+  { key: 'cars', href: '/cars/', label: 'Car recalls' },
+  { key: 'food', href: '/food/', label: 'Food recalls' },
   { key: 'categories', href: '/browse/', label: 'Browse' },
   { key: 'brands', href: '/brands/', label: 'Brands' },
   { key: 'guides', href: '/guides/', label: 'Guides' },
@@ -86,12 +88,12 @@ ${ads}${ga}
 <main id="main">${meta.fullWidth ? body.__html : `<div class="wrap">${body.__html}</div>`}</main>
 <footer class="site"><div class="wrap">
 <div class="cols">
-<div><h2>${esc(env.SITE_NAME)}</h2><p>A free, searchable index of US consumer product recalls, updated automatically from the official U.S. Consumer Product Safety Commission (CPSC) feed.</p></div>
-<div><h2>Explore</h2><ul><li><a href="/recalls/">Latest recalls</a></li><li><a href="/browse/">Browse by category and hazard</a></li><li><a href="/brands/">Brands</a></li><li><a href="/feed.xml">RSS feed</a></li></ul></div>
+<div><h2>${esc(env.SITE_NAME)}</h2><p>A free, searchable index of US consumer product, car and food recalls, updated automatically from official CPSC, NHTSA and FDA data.</p></div>
+<div><h2>Explore</h2><ul><li><a href="/recalls/">Product recalls</a></li><li><a href="/cars/">Car recalls</a></li><li><a href="/food/">Food recalls</a></li><li><a href="/browse/">Browse by category and hazard</a></li><li><a href="/brands/">Brands</a></li><li><a href="/feed.xml">RSS feed</a></li></ul></div>
 <div><h2>Guides</h2><ul><li><a href="/guides/how-to-check-if-a-product-is-recalled/">Check if a product is recalled</a></li><li><a href="/guides/what-to-do-with-a-recalled-product/">What to do with a recalled product</a></li><li><a href="/guides/e-bike-scooter-battery-charging-safety/">E-bike and scooter battery safety</a></li></ul></div>
 <div><h2>About</h2><ul><li><a href="/about/">About and methodology</a></li><li><a href="/contact/">Contact</a></li><li><a href="/privacy/">Privacy policy</a></li><li><a href="/terms/">Terms and disclaimer</a></li></ul></div>
 </div>
-<p class="disclaimer">${esc(env.SITE_NAME)} is an independent site and is not affiliated with, endorsed by or operated by the U.S. Consumer Product Safety Commission. Recall information comes from CPSC and is shown as published. Always follow the official notice linked on each page.</p>
+<p class="disclaimer">${esc(env.SITE_NAME)} is an independent site and is not affiliated with, endorsed by or operated by CPSC, NHTSA, FDA or any manufacturer. Recall information comes from those agencies and is shown as published. Always follow the official notice linked on each page.</p>
 <p class="disclaimer">© ${new Date().getUTCFullYear()} ${esc(env.SITE_NAME)}</p>
 </div></footer>
 </body>

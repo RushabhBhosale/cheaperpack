@@ -78,6 +78,8 @@ export interface Env {
   GA_ID: string;
   GSC_VERIFICATION: string;
   INDEXNOW_KEY: string;
+  /** Optional free openFDA key (open.fda.gov/apis/authentication). Raises the rate limit for the daily sync. */
+  OPENFDA_KEY?: string;
   /** Set by the deploy script so each deploy starts with a fresh page cache. */
   CACHE_VERSION?: string;
 }
